@@ -16,9 +16,9 @@ const SupplierTracking: React.FC<any> = () => {
   );
 
   const { data: regions } = useQuery<string[]>({
-      queryKey: ["regions", selectedMaterial?.material_id],
-      queryFn: () => getSupplierRegion(selectedMaterial?.material_id || ""),
-      enabled: !!selectedMaterial?.material_id,
+      queryKey: ["regions", selectedMaterial?.material_code],
+      queryFn: () => getSupplierRegion(selectedMaterial?.material_code || ""),
+      enabled: !!selectedMaterial?.material_code,
     });
 
   const [selectedRegion, setSelectedRegion] = useState<string>("");
@@ -36,9 +36,9 @@ const SupplierTracking: React.FC<any> = () => {
   }, [regions, selectedRegion]);
 
   const { data: supplierTracking, isLoading } = useQuery({
-    queryKey: ["supplierTracking", selectedMaterial?.material_id, selectedRegion],
-    queryFn: () => getNewsSupplierTracking(selectedMaterial?.material_id, selectedRegion),
-    enabled: !!selectedMaterial?.material_id && !!selectedRegion,
+    queryKey: ["supplierTracking", selectedMaterial?.material_code, selectedRegion],
+    queryFn: () => getNewsSupplierTracking(selectedMaterial?.material_code, selectedRegion),
+    enabled: !!selectedMaterial?.material_code && !!selectedRegion,
   });
 
   const columns = [

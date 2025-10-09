@@ -18,7 +18,7 @@ const exampleData = [
     supplier_id: "12813",
     supplier_name: "BASF India Ltd",
     supplier_site: "MUMBAI-194Q",
-    material_id: "M025",
+    material_code: "M025",
     item_description: "2-Ethylhexanoic Acid",
     quantity: "59200.0000",
     uom: "KILOGRAMS",

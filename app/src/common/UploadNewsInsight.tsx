@@ -55,7 +55,7 @@ const UploadNewsInsight: React.FC<UploadNewsInsightProps> = ({
           title,
           dayjs(date).format("YYYY-MM-DD"),
           newslink,
-          selectedMaterial?.material_id || ""
+          selectedMaterial?.material_code || ""
         );
         message.success("News insight submitted!");
         setTitle("");

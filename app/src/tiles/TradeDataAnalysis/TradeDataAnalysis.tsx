@@ -57,9 +57,9 @@ const TradeDataAnalysis: React.FC = () => {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: ["tradeData", selectedMaterial?.material_id, selectedYear],
+    queryKey: ["tradeData", selectedMaterial?.material_code, selectedYear],
     queryFn: () =>
-      getTradeData(selectedMaterial?.material_id || "", selectedYear),
+      getTradeData(selectedMaterial?.material_code || "", selectedYear),
     enabled: !!selectedMaterial,
   });
 

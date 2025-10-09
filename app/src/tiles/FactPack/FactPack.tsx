@@ -22,18 +22,18 @@ const FactPack: React.FC = () => {
   );
 
   const { data: factPackData, isLoading } = useQuery({
-    queryKey: ["factPackData", selectedMaterial?.material_id],
-    queryFn: () => getFactPackData(selectedMaterial?.material_id || ""),
+    queryKey: ["factPackData", selectedMaterial?.material_code],
+    queryFn: () => getFactPackData(selectedMaterial?.material_code || ""),
     enabled: !!selectedMaterial,
   });
 
   const uploadPDFMutation = useMutation({
     mutationFn: (params: { file: File }) =>
-      uploadFactPackFile(params.file, selectedMaterial?.material_id || ""),
+      uploadFactPackFile(params.file, selectedMaterial?.material_code || ""),
     onSuccess: (response) => {
       message.success("PDF successfully uploaded and processing started!", 5);
       queryClient.invalidateQueries({
-        queryKey: ["factPackData", selectedMaterial?.material_id],
+        queryKey: ["factPackData", selectedMaterial?.material_code],
       });
       queryClient.invalidateQueries({ queryKey: ["processingPDFs"] });
     },

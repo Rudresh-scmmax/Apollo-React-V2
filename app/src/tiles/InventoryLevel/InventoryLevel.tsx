@@ -22,9 +22,9 @@ const InventoryLevel: React.FC = () => {
 
   // Fetch inventory data
   const { data: inventoryData, isLoading } = useQuery({
-    queryKey: ["inventoryLevel", selectedMaterial?.material_id],
-    queryFn: () => getInventoryLevels(selectedMaterial?.material_id || ""),
-    enabled: !!selectedMaterial?.material_id,
+    queryKey: ["inventoryLevel", selectedMaterial?.material_code],
+    queryFn: () => getInventoryLevels(selectedMaterial?.material_code || ""),
+    enabled: !!selectedMaterial?.material_code,
   });
 
   const columns = [

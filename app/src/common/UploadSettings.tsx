@@ -11,7 +11,7 @@ interface UploadSettingsProps {
 
 const exampleData = [
   {
-    material_id: "M0003",
+    material_code: "M0003",
     date: "2024-12-01",
     price_per_uom: 1025.5,
     currency: "USD",
@@ -24,7 +24,7 @@ const exampleData = [
     supply_disruption: "NO",
   },
   {
-    material_id: "M0003",
+    material_code: "M0003",
     date: "2025-01-01",
     price_per_uom: 830.75,
     currency: "USD",
@@ -37,7 +37,7 @@ const exampleData = [
     supply_disruption: "YES",
   },
   {
-    material_id: "M0003",
+    material_code: "M0003",
     date: "2025-02-15",
     price_per_uom: 676.3,
     currency: "USD",
@@ -50,7 +50,7 @@ const exampleData = [
     supply_disruption: "NO",
   },
   {
-    material_id: "M0003",
+    material_code: "M0003",
     date: "2025-03-10",
     price_per_uom: 945.0,
     currency: "USD",

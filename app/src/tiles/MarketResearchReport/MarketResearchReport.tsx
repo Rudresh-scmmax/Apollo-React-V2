@@ -18,7 +18,7 @@ import EditableTakeawayTable from "./Table/TakeawaysTable";
 
 // type Material = {
 // 	material_description: string;
-// 	material_id: string;
+// 	material_code: string;
 //   };
 
 const MarketResearchReport: React.FC = () => {
@@ -56,8 +56,8 @@ const MarketResearchReport: React.FC = () => {
   });
 
   const uploadPDFMutation = useMutation({
-    mutationFn: (params: { file: File; material_id: string }) =>
-      uploadPDF(params.file, params.material_id),
+    mutationFn: (params: { file: File; material_code: string }) =>
+      uploadPDF(params.file, params.material_code),
     onSuccess: (response) => {
       setSelectedFile(null);
       setNewMaterialCode("");
@@ -84,7 +84,7 @@ const MarketResearchReport: React.FC = () => {
     refetch,
   } = useQuery<ReportData[]>({
     queryKey: ["takeaways", selectedMaterial],
-    queryFn: () => getReports(selectedMaterial?.material_id),
+    queryFn: () => getReports(selectedMaterial?.material_code),
   });
 
   const addMaterialMutation = useMutation({
@@ -112,7 +112,7 @@ const MarketResearchReport: React.FC = () => {
     if (selectedFile && newMaterialCode) {
       uploadPDFMutation.mutate({
         file: selectedFile,
-        material_id: newMaterialCode,
+        material_code: newMaterialCode,
       });
     } else {
       message.error("material or file should not be empty");
@@ -175,10 +175,10 @@ const MarketResearchReport: React.FC = () => {
           <div className="flex gap-4">
             <select
               className="border border-gray-300 rounded-lg px-4 py-2 bg-white max-w-[250px] truncate"
-              value={selectedMaterial?.material_id || ""}
+              value={selectedMaterial?.material_code || ""}
               onChange={(e) => {
                 const selected = materials?.find(
-                  (material) => material.material_id === e.target.value
+                  (material) => material.material_code === e.target.value
                 );
                 setSelectedMaterial(selected ?? null);
               }}
@@ -187,7 +187,7 @@ const MarketResearchReport: React.FC = () => {
               {materials?.map((material, index) => (
                 <option
                   key={index}
-                  value={material?.material_id}
+                  value={material?.material_code}
                   title={material?.material_description} // Show full on hover
                 >
                   {material?.material_description?.slice(0, 50)}
@@ -219,7 +219,7 @@ const MarketResearchReport: React.FC = () => {
                         >
                           <option value="">Select Material*</option>
                           {materials?.map((material, index) => (
-                            <option key={index} value={material?.material_id}>
+                            <option key={index} value={material?.material_code}>
                               {material?.material_description}
                             </option>
                           ))}

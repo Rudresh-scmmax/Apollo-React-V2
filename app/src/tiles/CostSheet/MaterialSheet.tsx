@@ -29,9 +29,9 @@ const MaterialSheet = () => {
   );
 
   const { data: materialSubtituteData, isLoading } = useQuery({
-    queryKey: ["materialSubtituteData", selectedMaterial?.material_id],
+    queryKey: ["materialSubtituteData", selectedMaterial?.material_code],
     queryFn: () =>
-      getMaterialSubtituteData(selectedMaterial?.material_id || ""),
+      getMaterialSubtituteData(selectedMaterial?.material_code || ""),
     enabled: !!selectedMaterial,
   });
 

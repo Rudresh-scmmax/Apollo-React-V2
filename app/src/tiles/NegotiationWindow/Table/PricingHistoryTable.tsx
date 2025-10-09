@@ -62,7 +62,7 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
   const { data: materialPriceHistory, isLoading } = useQuery({
     queryKey: ["materialPriceHistory", selectedMaterial, region],
     queryFn: () =>
-      getMaterialPriceHistory(selectedMaterial?.material_id, region),
+      getMaterialPriceHistory(selectedMaterial?.material_code, region),
     enabled: !!selectedMaterial && !!region,
   });
 

@@ -22,9 +22,9 @@ const VendorWiseActionPlan: React.FC = () => {
 
   // Fetch inventory data
   const { data: inventoryData, isLoading } = useQuery({
-    queryKey: ["inventoryLevel", selectedMaterial?.material_id],
-    queryFn: () => getVendorWiseActionPlan(selectedMaterial?.material_id || ""),
-    enabled: !!selectedMaterial?.material_id,
+    queryKey: ["inventoryLevel", selectedMaterial?.material_code],
+    queryFn: () => getVendorWiseActionPlan(selectedMaterial?.material_code || ""),
+    enabled: !!selectedMaterial?.material_code,
   });
 
   const columns = [

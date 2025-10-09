@@ -31,8 +31,8 @@ const CostSheetDashboard: React.FC = () => {
   useEffect(() => {
     const fetchRegions = async () => {
       try {
-        if (!selectedMaterial?.material_id) return;
-        const regionData = await getRegions(selectedMaterial.material_id);
+        if (!selectedMaterial?.material_code) return;
+        const regionData = await getRegions(selectedMaterial.material_code);
         const sortedRegions = regionData.sort();
         setRegions(sortedRegions);
 
@@ -48,14 +48,14 @@ const CostSheetDashboard: React.FC = () => {
 
     fetchRegions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedMaterial?.material_id]);
+  }, [selectedMaterial?.material_code]);
 
   // Fetch price data when region changes
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (
-          !selectedMaterial?.material_id ||
+          !selectedMaterial?.material_code ||
           !selectedMaterial?.material_description ||
           !selectedRegion
         ) {
@@ -64,7 +64,7 @@ const CostSheetDashboard: React.FC = () => {
         }
 
         const priceData = await getMaterialPriceHistory(
-          selectedMaterial.material_id,
+          selectedMaterial.material_code,
           selectedRegion
         );
 
@@ -97,7 +97,7 @@ const CostSheetDashboard: React.FC = () => {
       fetchData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRegion, selectedMaterial?.material_id, selectedMaterial?.material_description]);
+  }, [selectedRegion, selectedMaterial?.material_code, selectedMaterial?.material_description]);
 
   const calculatePercentageChange = (current: number, previous: number) => {
     if (!previous) return "-";

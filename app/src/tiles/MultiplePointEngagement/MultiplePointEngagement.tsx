@@ -40,10 +40,10 @@ const MultiplePointEngagement: React.FC<any> = () => {
   }, [selectedMaterial, navigate]);
 
   const { data: momData, isLoading } = useQuery({
-    queryKey: ["multiplePointEngagement", selectedMaterial?.material_id],
+    queryKey: ["multiplePointEngagement", selectedMaterial?.material_code],
     queryFn: () =>
-      getMultiplePointEngagemeants(selectedMaterial?.material_id || ""),
-    enabled: !!selectedMaterial?.material_id,
+      getMultiplePointEngagemeants(selectedMaterial?.material_code || ""),
+    enabled: !!selectedMaterial?.material_code,
   });
 
   const handleViewMom = (text: string) => {

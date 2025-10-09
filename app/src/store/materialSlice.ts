@@ -4,7 +4,7 @@ import { loadState } from "./localStorage";
 const selectedMaterial = loadState("appState");
 interface Material {
   material_description: string;
-  material_id: string;
+  material_code: string;
 }
 
 interface MaterialState {

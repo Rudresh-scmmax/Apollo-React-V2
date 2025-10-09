@@ -16,9 +16,9 @@ const DemandSupplyTrend: React.FC<any> = () => {
   );
  
   const { data: regions } = useQuery<string[]>({
-      queryKey: ["regions", selectedMaterial?.material_id],
-      queryFn: () => getRegions(selectedMaterial?.material_id || "", 'factors_influencing_supply'),
-      enabled: !!selectedMaterial?.material_id,
+      queryKey: ["regions", selectedMaterial?.material_code],
+      queryFn: () => getRegions(selectedMaterial?.material_code || "", 'factors_influencing_supply'),
+      enabled: !!selectedMaterial?.material_code,
     });
 
   const [selectedRegion, setSelectedRegion] = useState<string>("");
@@ -39,7 +39,7 @@ const DemandSupplyTrend: React.FC<any> = () => {
     queryKey: ["demandSupplyTrends", selectedMaterial, selectedRegion],
     queryFn: () =>
       getDemandSupplyTrends(
-        selectedMaterial?.material_id,
+        selectedMaterial?.material_code,
         selectedRegion
       ),
     enabled: !!selectedMaterial && !!selectedRegion,

@@ -37,78 +37,79 @@ import {
   FaTimesCircle,
 } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
-import { Material, useBusinessAPI } from "../services/BusinessProvider";
+import { Material, useBusinessAPI } from "../../services/BusinessProvider";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocalStorage } from "../services/StorageProvider";
+import { useLocalStorage } from "../../services/StorageProvider";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "../store/store";
-import { setGlobalSelectedMaterial } from "../store/materialSlice";
+import { RootState } from "../../store/store";
+import { setGlobalSelectedMaterial } from "../../store/materialSlice";
+import ProcurementNews from "./ProcurementNews";
+import PriceChartWithNews from "./PriceChart";
+import VendorWiseActionPlanList from "./VendorWiseActionPlanList";
 
 interface TileProps {
   icon: React.ReactNode;
   title: string;
   onClick: () => void;
   isActive: boolean;
-  onToggle: (name: string, active: boolean) => void;
+  onToggle: (title: string, newState: boolean) => void;
 }
 
-const Tile: React.FC<TileProps> = ({
-  icon,
-  title,
-  onClick,
-  isActive,
-  onToggle,
-}) => (
-  <div className="relative bg-white p-4 rounded-lg shadow-md hover:shadow-lg transition-shadow border border-gray-200">
-    <div className="absolute top-2 right-2">
+const Tile: React.FC<TileProps> = ({ icon, title, onClick, isActive, onToggle }) => {
+  const accent = "#a0bf3f";
+
+  return (
+    <div
+      onClick={onClick}
+      className={`
+        relative rounded-2xl transition-all cursor-pointer select-none
+        bg-white border hover:shadow-lg
+      `}
+      style={{
+        borderColor: isActive ? accent : "#e0e0e0",
+        borderTop: `3px solid ${accent}`,
+        boxShadow: isActive
+          ? `0 6px 16px rgba(85, 139, 47, 0.25)`
+          : `0 4px 12px rgba(0, 0, 0, 0.06)`,
+        padding: "22px 18px 18px 18px",
+        height: 130,
+      }}
+    >
+      {/* Toggle Button */}
       <button
         onClick={(e) => {
           e.stopPropagation();
           onToggle(title, !isActive);
         }}
-        className="text-blue-600 hover:text-blue-800"
+        aria-label={`Toggle ${title}`}
+        className="absolute top-2 right-3 transition-colors"
+        style={{
+          color: isActive ? accent : "#b0bec5",
+        }}
       >
         {isActive ? <FaToggleOn size={20} /> : <FaToggleOff size={20} />}
       </button>
-    </div>
-    <div
-      onClick={onClick}
-      className="flex flex-col items-center text-center gap-3 cursor-pointer pt-3"
-    >
-      <div
-        className={`text-2xl ${isActive ? "text-blue-600" : "text-gray-400"}`}
-      >
-        {icon}
-      </div>
-      <span
-        className={`text-sm font-medium ${
-          isActive ? "text-gray-800" : "text-gray-400"
-        }`}
-      >
-        {title}
-      </span>
-    </div>
-  </div>
-);
 
-const NewsUpdateCard: React.FC<{
-  category: string;
-  // headline: string;
-  summary: string;
-  // impact: "positive" | "negative" | "neutral";
-  timeframe: string;
-}> = ({ category, /* headline,*/ summary, /*impact,*/ timeframe }) => (
-  <div className="bg-white p-4 rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow">
-    <div className="flex justify-between items-start mb-2">
-      <span className="text-xs font-medium px-2 py-1 rounded-full bg-gray-100 text-gray-600">
-        {category}
-      </span>
-      <span className="text-xs text-gray-400">{timeframe}</span>
+      {/* Content */}
+      <div className="flex flex-col items-center gap-3 text-center">
+        <div
+          className="text-3xl transition-colors"
+          style={{ color: isActive ? accent : "#cfd8dc" }}
+        >
+          {icon}
+        </div>
+        <span
+          className="text-[15px] font-semibold transition-colors"
+          style={{ color: isActive ? "black" : "#37474f" }}
+        >
+          {title}
+        </span>
+      </div>
     </div>
-    <p className="text-sm text-gray-600 mb-3">{summary}</p>
-    <div className="flex items-center"></div>
-  </div>
-);
+  );
+};
+
+
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -121,15 +122,13 @@ const DashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
   const {
     getMaterials,
-    uploadPDF,
-    getDailyUpdate,
     addMaterial,
     checkTiles,
     toggleTile,
     checkPDFStatus,
   } = useBusinessAPI();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
-    getGlobalSetMaterial
+    getGlobalSetMaterial || {material_description: "Glycerine", material_code: "M0003"}
   );
   const [showAddOptions, setShowAddOptions] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState("");
@@ -153,13 +152,6 @@ const DashboardPage: React.FC = () => {
     queryFn: getMaterials,
   });
 
-  // Fetch daily updates using React Query
-  const { data: dailyUpdates, isLoading: isLoadingDailyUpdates } = useQuery<
-    DailyUpdate[]
-  >({
-    queryKey: ["dailyUpdates"],
-    queryFn: getDailyUpdate,
-  });
 
   // Fetch tile status using React Query
   const { data: tiles_data, isLoading: isLoadingTiles } = useQuery<Tile[]>({
@@ -207,6 +199,7 @@ const DashboardPage: React.FC = () => {
     },
   });
 
+
   const handleToggleTile = (title: string, active: boolean) => {
     toggleTileMutation.mutate({ title, active });
   };
@@ -222,6 +215,12 @@ const DashboardPage: React.FC = () => {
       setSelectedFile(event.target.files[0]);
     }
   };
+
+  // const handleUploadPDF = () => {
+  //   if (selectedFile) {
+  //     uploadPDFMutation.mutate(selectedFile);
+  //   }
+  // };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -270,8 +269,8 @@ const DashboardPage: React.FC = () => {
     },
     {
       icon: <FaHandshake />,
-      title: "Negotiation Window",
-      link: "/negotiation-window",
+      title: "Price Forecast",
+      link: "/price-forecast",
     },
     { icon: <FaKey />, title: "Key Value Drivers", link: "/key-value-drivers" },
     {
@@ -281,41 +280,17 @@ const DashboardPage: React.FC = () => {
     },
     { icon: <FaBoxes />, title: "Inventory Levels", link: "/inventory-levels" },
 
-    {
-      icon: <FaChartBar />,
-      title: "Cyclical Patterns",
-      link: "/cyclical-patterns",
-    },
-    {
-      icon: <FaFileContract />,
-      title: "Quotation Comparison",
-      link: "/quotation-comparison",
-    },
-    {
-      icon: <FaGlobe />,
-      title: "Trade Data Analysis",
-      link: "/trade-data-analysis",
-    },
-    {
-      icon: <FaProjectDiagram />,
-      title: "Joint Development Projects",
-      link: "/joint-development-projects",
-    },
-    {
-      icon: <FaSearchDollar />,
-      title: "Price Benchmarking",
-      link: "/price-benchmarking",
-    },
+    { icon: <FaChartBar />, title: "Cyclical Patterns", link: "/cyclical-patterns" },
+    { icon: <FaFileContract />, title: "Quotation Comparison", link: "/quotation-comparison" },
+    { icon: <FaGlobe />, title: "Trade Data Analysis", link: "/trade-data-analysis" },
+    { icon: <FaProjectDiagram />, title: "Joint Development Projects", link: "/joint-development-projects" },
+    { icon: <FaSearchDollar />, title: "Price Benchmarking", link: "/price-benchmarking" },
     {
       icon: <FaPowerOff />,
       title: "Shutdown Tracker",
       link: "/shutdown-tracker",
     },
-    {
-      icon: <FaBullseye />,
-      title: "Negotiation Objectives",
-      link: "/negotiation-objectives",
-    },
+    { icon: <FaBullseye />, title: "Negotiation Templates", link: "/negotiation-objectives" },
     {
       icon: <FaAddressCard />,
       title: "Vendor Key Information",
@@ -331,21 +306,11 @@ const DashboardPage: React.FC = () => {
       title: "Vendor Wise Action Plan",
       link: "/vendor-wise-action-plan",
     },
-    {
-      icon: <FaIndustry />,
-      title: "Industry Porter Analysis",
-      link: "/industry-porter-analysis",
-    },
+    { icon: <FaIndustry />, title: "Industry Porter Analysis", link: "/industry-porter-analysis" },
     { icon: <FaClipboardCheck />, title: "Internal Reviews Tracker" },
   ];
 
-  if (isLoadingMaterials || isLoadingDailyUpdates || isLoadingTiles) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600 text-lg font-semibold">Loading...</div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="p-8">
@@ -353,11 +318,10 @@ const DashboardPage: React.FC = () => {
         {/* Upload Status Notification */}
         {uploadStatus.visible && (
           <div
-            className={`p-4 rounded-lg ${
-              uploadStatus.success
-                ? "bg-green-100 border border-green-300 text-green-700"
-                : "bg-red-100 border border-red-300 text-red-700"
-            } flex items-center justify-between transition-all duration-300`}
+            className={`p-4 rounded-lg ${uploadStatus.success
+              ? "bg-green-100 border border-green-300 text-green-700"
+              : "bg-red-100 border border-red-300 text-red-700"
+              } flex items-center justify-between transition-all duration-300`}
           >
             <div className="flex items-center">
               {uploadStatus.success ? (
@@ -387,7 +351,7 @@ const DashboardPage: React.FC = () => {
           {/* Material Selector */}
           <div className="flex gap-4">
             <select
-              className="border border-gray-300 rounded-lg px-4 py-2 bg-white max-w-[250px] truncate"
+              className="border border-gray-300 rounded-lg px-4 py-2 bg-white"
               value={selectedMaterial?.material_code || ""}
               onChange={(e) => {
                 const selected = materials?.find(
@@ -396,18 +360,14 @@ const DashboardPage: React.FC = () => {
                 setSelectedMaterial(selected ?? null);
                 if (selected) {
                   dispatch(setGlobalSelectedMaterial(selected));
+                  // localStorage.setItem("selectedMaterial", JSON.stringify(selected));
                 }
               }}
             >
               <option value="">Select Material</option>
               {materials?.map((material, index) => (
-                <option
-                  key={index}
-                  value={material?.material_code}
-                  title={material?.material_description} // Show full on hover
-                >
-                  {material?.material_description?.slice(0, 50)}
-                  {/* Optional manual trim */}
+                <option key={index} value={material?.material_code}>
+                  {material?.material_description}
                 </option>
               ))}
             </select>
@@ -460,23 +420,22 @@ const DashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* Daily Updates */}
-        <div>
-          <h2 className="text-xl font-semibold text-gray-700 mb-4">
-            Procurement News
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {dailyUpdates?.map((update, index) => (
-              <NewsUpdateCard key={index} {...update} />
-            ))}
-          </div>
+        <div
+          className="grid gap-6"
+          style={{ gridTemplateColumns: "30% 40% 30%" }}
+        >
+          <ProcurementNews materialCode={selectedMaterial?.material_code || ""} region="Asia-Pacific" />
+          <PriceChartWithNews materialCode={selectedMaterial?.material_code || ""} region="Asia-Pacific" />
+          <VendorWiseActionPlanList materialCode={selectedMaterial?.material_code || ""} region="Asia-Pacific" />
         </div>
+
+
 
         {/* Analytics Grid */}
         {selectedMaterial && (
           <div>
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
-              Analytics Dashboard for: {selectedMaterial?.material_description}
+              Analytics Overview for: {selectedMaterial?.material_description}
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
               {tiles.map((tile, index) => {

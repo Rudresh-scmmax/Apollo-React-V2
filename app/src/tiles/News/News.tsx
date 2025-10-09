@@ -19,9 +19,9 @@ const News: React.FC<any> = () => {
   );
 
   const { data: regions } = useQuery<string[]>({
-      queryKey: ["regions", selectedMaterial?.material_id],
-      queryFn: () => getRegions(selectedMaterial?.material_id || "", "news_highlight"),
-      enabled: !!selectedMaterial?.material_id,
+      queryKey: ["regions", selectedMaterial?.material_code],
+      queryFn: () => getRegions(selectedMaterial?.material_code || "", "news_highlight"),
+      enabled: !!selectedMaterial?.material_code,
     });
 
   const [selectedRegion, setSelectedRegion] = useState<string>("");
@@ -39,10 +39,10 @@ const News: React.FC<any> = () => {
   }, [regions, selectedRegion]);
 
   const { data: newsInsights, isLoading } = useQuery({
-    queryKey: ["newsInsights", selectedMaterial?.material_id, selectedRegion],
+    queryKey: ["newsInsights", selectedMaterial?.material_code, selectedRegion],
     queryFn: () =>
-      getNewsInsights(selectedMaterial?.material_id, selectedRegion),
-    enabled: !!selectedMaterial?.material_id && !!selectedRegion,
+      getNewsInsights(selectedMaterial?.material_code, selectedRegion),
+    enabled: !!selectedMaterial?.material_code && !!selectedRegion,
   });
 
   const columns = [

@@ -29,7 +29,7 @@ const gridTemplate = [
 const IndustryPorterAnalysis: React.FC = () => {
   const { getPortersAnalysis } = useBusinessAPI();
   const selectedMaterial = useSelector((state: RootState) => state.material.globalSelectedMaterial);
-  const materialCode = selectedMaterial?.material_id;
+  const materialCode = selectedMaterial?.material_code;
   const materialDesc = selectedMaterial?.material_description || "All Material";
 
   const { data, isLoading, isError } = useQuery({

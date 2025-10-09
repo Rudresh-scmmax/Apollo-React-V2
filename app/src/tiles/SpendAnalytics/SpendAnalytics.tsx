@@ -26,8 +26,8 @@ const SpendAnalytics: React.FC = () => {
 
   // Fetch filters on mount
   useEffect(() => {
-    if (selectedMaterial?.material_id) {
-      getProcurementFilters(selectedMaterial.material_id).then((res) => {
+    if (selectedMaterial?.material_code) {
+      getProcurementFilters(selectedMaterial.material_code).then((res) => {
         const yearsList = res.years && res.years.length > 0 ? res.years : [];
         setYears(["All", ...yearsList]);
         const buyersList =
@@ -41,7 +41,7 @@ const SpendAnalytics: React.FC = () => {
     if (!selectedYear && !selectedBuyer) return;
     setLoading(true);
     getProcurementHistory({
-      materialCode: selectedMaterial?.material_id ?? "",
+      materialCode: selectedMaterial?.material_code ?? "",
       year: selectedYear === "All" ? "" : selectedYear,
       buyerName: selectedBuyer === "All" ? "" : selectedBuyer,
     })

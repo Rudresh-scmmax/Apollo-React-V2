@@ -39,14 +39,14 @@ const PriceBenchmarking: React.FC = () => {
       queryKey: [
         "priceHistoryTrend",
         selectedYear,
-        selectedMaterial?.material_id,
+        selectedMaterial?.material_code,
       ],
       queryFn: () =>
         getPriceHistoryTrend(
           selectedYear,
-          selectedMaterial?.material_id || ""
+          selectedMaterial?.material_code || ""
         ),
-      enabled: !!selectedYear && !!selectedMaterial?.material_id,
+      enabled: !!selectedYear && !!selectedMaterial?.material_code,
     });
 
   const { data: supplierTrend, isLoading: isSupplierLoading } =
@@ -54,11 +54,11 @@ const PriceBenchmarking: React.FC = () => {
       queryKey: [
         "supplierTrend",
         selectedYear,
-        selectedMaterial?.material_id,
+        selectedMaterial?.material_code,
       ],
       queryFn: () =>
-        getSupplierTrend(selectedYear, selectedMaterial?.material_id || ""),
-      enabled: !!selectedYear && !!selectedMaterial?.material_id,
+        getSupplierTrend(selectedYear, selectedMaterial?.material_code || ""),
+      enabled: !!selectedYear && !!selectedMaterial?.material_code,
     });
 
   useEffect(() => {

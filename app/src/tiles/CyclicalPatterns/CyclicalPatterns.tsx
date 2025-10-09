@@ -21,23 +21,23 @@ const CyclicalPatterns: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>("");
 
   const { data: regions } = useQuery<string[]>({
-    queryKey: ["regions", selectedMaterial?.material_id],
-    queryFn: () => getRegions(selectedMaterial?.material_id || ""),
-    enabled: !!selectedMaterial?.material_id,
+    queryKey: ["regions", selectedMaterial?.material_code],
+    queryFn: () => getRegions(selectedMaterial?.material_code || ""),
+    enabled: !!selectedMaterial?.material_code,
   });
 
   const { data: priceHistory, isLoading: isPriceLoading } = useQuery({
     queryKey: [
       "historicalPrices",
-      selectedMaterial?.material_id,
+      selectedMaterial?.material_code,
       selectedRegion,
     ],
     queryFn: () =>
       getHistoricalPrices(
-        selectedMaterial?.material_id || "",
+        selectedMaterial?.material_code || "",
         selectedRegion
       ),
-    enabled: !!selectedMaterial?.material_id && !!selectedRegion,
+    enabled: !!selectedMaterial?.material_code && !!selectedRegion,
   });
 
   useEffect(() => {
