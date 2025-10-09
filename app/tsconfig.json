@@ -1,0 +1,17 @@
+{
+	"compilerOptions": {
+	  "target": "es5",
+	  "module": "es2020",
+	  "lib": ["dom", "dom.iterable", "esnext", "es2020"],
+	  "jsx": "react-jsx",
+	  "strict": true,
+	  "moduleResolution": "node",
+	  "esModuleInterop": true,
+	  "jsxImportSource": "react"
+	},
+	"include": [
+        "src/**/*",
+        "src/**/*.d.ts"
+    ]
+	
+  }
