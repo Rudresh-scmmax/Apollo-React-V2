@@ -3,8 +3,13 @@ import { Button, Input, DatePicker, message } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { useBusinessAPI } from "../services/BusinessProvider";
-import { useSelector } from "react-redux";
-import { RootState } from "../store/store";
+import { useQuery } from "@tanstack/react-query";
+import MaterialSelect from "./MaterialSelect";
+
+interface Material {
+  material_id: string;
+  material_description: string;
+}
 
 interface UploadNewsInsightProps {
   onUploadSuccess?: () => void;
@@ -15,14 +20,17 @@ const PRIMARY_COLOR = "#a0bf3f";
 const UploadNewsInsight: React.FC<UploadNewsInsightProps> = ({
   onUploadSuccess,
 }) => {
-  const { uploadNewsHighlight, uploadSingleNewsHighlight } = useBusinessAPI();
+  const { uploadNewsHighlight, uploadSingleNewsHighlight, getMaterials } = useBusinessAPI();
   const [mode, setMode] = useState<"file" | "manual">("file");
   const [file, setFile] = useState<File | null>(null);
   const fileUploadRef = useRef<HTMLInputElement | null>(null);
 
-  const selectedMaterial = useSelector(
-    (state: RootState) => state.material.globalSelectedMaterial
-  );
+  // Material selector state
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const { data: materials, isLoading: isLoadingMaterials } = useQuery<Material[]>({
+    queryKey: ["materials"],
+    queryFn: getMaterials,
+  });
 
   // Manual entry states
   const [title, setTitle] = useState("");
@@ -30,13 +38,18 @@ const UploadNewsInsight: React.FC<UploadNewsInsightProps> = ({
   const [newslink, setNewslink] = useState("");
 
   const handleUpload = async () => {
+    if (!selectedMaterial) {
+      message.error("Please select a material.");
+      return;
+    }
     if (mode === "file") {
       if (!file) {
         message.error("Please select a file to upload.");
         return;
       }
       try {
-        await uploadNewsHighlight(file);
+        // Pass both file and material id
+        await uploadNewsHighlight(file, selectedMaterial.material_id);
         message.success(`${file.name.split(".")[1]} uploaded successfully`);
         setFile(null);
         if (fileUploadRef.current) fileUploadRef.current.value = "";
@@ -55,7 +68,7 @@ const UploadNewsInsight: React.FC<UploadNewsInsightProps> = ({
           title,
           dayjs(date).format("YYYY-MM-DD"),
           newslink,
-          selectedMaterial?.material_code || ""
+          selectedMaterial.material_id
         );
         message.success("News insight submitted!");
         setTitle("");
@@ -72,6 +85,18 @@ const UploadNewsInsight: React.FC<UploadNewsInsightProps> = ({
   return (
     <div className="mt-4 p-4 border rounded-lg bg-gray-50 shadow-sm">
       <h3 className="text-lg font-semibold mb-2">Upload News Insights</h3>
+
+      {/* Material Selector */}
+      <div className="mb-3">
+        <MaterialSelect
+          materials={materials || []}
+          selectedMaterial={selectedMaterial}
+          onSelect={setSelectedMaterial}
+          placeholder="Select Material*"
+        />
+      </div>
+
+      {/* Mode Toggle */}
       <div className="mb-4 flex gap-4">
         <Button
           style={{
@@ -96,6 +121,8 @@ const UploadNewsInsight: React.FC<UploadNewsInsightProps> = ({
           Manual Entry
         </Button>
       </div>
+
+      {/* File upload mode */}
       {mode === "file" ? (
         <>
           <input
@@ -104,6 +131,9 @@ const UploadNewsInsight: React.FC<UploadNewsInsightProps> = ({
             ref={fileUploadRef}
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
+          <div className="text-xs text-gray-500 mt-1 mb-2">
+            Only PDF files are allowed.
+          </div>
           <Button
             icon={<UploadOutlined />}
             onClick={handleUpload}

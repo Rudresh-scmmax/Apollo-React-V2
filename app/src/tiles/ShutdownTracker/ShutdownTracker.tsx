@@ -19,9 +19,9 @@ const ShutdownTracker: React.FC<any> = () => {
   );
 
   const { data: regions } = useQuery<string[]>({
-    queryKey: ["regions", selectedMaterial?.material_code],
-    queryFn: () => getShutdownRegions(selectedMaterial?.material_code || ""),
-    enabled: !!selectedMaterial?.material_code,
+    queryKey: ["regions", selectedMaterial?.material_id],
+    queryFn: () => getShutdownRegions(selectedMaterial?.material_id || ""),
+    enabled: !!selectedMaterial?.material_id,
   });
 
   const [selectedRegion, setSelectedRegion] = useState<string>("");
@@ -44,12 +44,12 @@ const ShutdownTracker: React.FC<any> = () => {
   const { data: shutdownTracking, isLoading } = useQuery({
     queryKey: [
       "shutdownTracking",
-      selectedMaterial?.material_code,
+      selectedMaterial?.material_id,
       selectedRegion,
     ],
     queryFn: () =>
-      getShutdownTracking(selectedMaterial?.material_code, selectedRegion),
-    enabled: !!selectedMaterial?.material_code && !!selectedRegion,
+      getShutdownTracking(selectedMaterial?.material_id, selectedRegion),
+    enabled: !!selectedMaterial?.material_id && !!selectedRegion,
   });
 
   // Helper to handle update
@@ -66,7 +66,7 @@ const ShutdownTracker: React.FC<any> = () => {
         return;
       }
       await updateShutdownTracking({
-        material_code: selectedMaterial.material_code,
+        material_id: selectedMaterial.material_id,
         region: selectedRegion,
         date: record.date,
         [field]: value,
@@ -78,7 +78,7 @@ const ShutdownTracker: React.FC<any> = () => {
       queryClient.invalidateQueries({
         queryKey: [
           "shutdownTracking",
-          selectedMaterial.material_code ?? "",
+          selectedMaterial.material_id ?? "",
           selectedRegion,
         ],
       });

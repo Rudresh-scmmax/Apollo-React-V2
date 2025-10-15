@@ -6,32 +6,30 @@ import { FaExternalLinkAlt } from 'react-icons/fa';
 import { useBusinessAPI } from '../../../services/BusinessProvider';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-// Update the ReportData interface to include upload_user_email and update_user_email
-interface ReportData {
+interface MarketItem {
     id: number;
     published_date: string;
     publication: string;
     report_link: string;
     takeaway: string;
-    upload_user_email: string | null; // Added
-    update_user_email: string | null; // Added
 }
 
-// Assuming ReportData is the same as ReportData for this component's props
 interface Props {
-    marketData: ReportData[]; // Changed to ReportData[] for consistency
+    marketData: ReportData[];
+    onDelete: (id: number) => void;
 }
 
-const EditableTakeawayTable: React.FC<Props> = ({ marketData }) => {
+const EditableTakeawayTable: React.FC<Props> = ({ marketData, onDelete }) => {
     const { updateTakeaway } = useBusinessAPI();
     const [editingKey, setEditingKey] = useState<number | null>(null);
     const [editedText, setEditedText] = useState<string>('');
 
     const queryClient = useQueryClient();
 
-    const isEditing = (record: ReportData) => record.id === editingKey;
 
-    const edit = (record: ReportData) => {
+    const isEditing = (record: MarketItem) => record.id === editingKey;
+
+    const edit = (record: MarketItem) => {
         setEditingKey(record.id);
         setEditedText(record.takeaway);
     };
@@ -49,6 +47,7 @@ const EditableTakeawayTable: React.FC<Props> = ({ marketData }) => {
             message.success('Takeaway updated successfully');
             setEditingKey(null);
             queryClient.invalidateQueries({ queryKey: ['takeaways'] });
+
         },
 
         onError: (error: any) => {
@@ -56,19 +55,20 @@ const EditableTakeawayTable: React.FC<Props> = ({ marketData }) => {
         },
     });
 
-    const save = (record: ReportData) => {
+
+    const save = (record: MarketItem) => {
         saveTakeawayMutation.mutate({
             id: record.id,
             takeaway: editedText,
         });
     };
 
-    const columns: ColumnsType<ReportData> = [
+
+    const columns: ColumnsType<MarketItem> = [
         {
             title: 'Date',
             dataIndex: 'published_date',
             key: 'published_date',
-            width: 120, // Example width in pixels
             render: (date: string) =>
                 new Date(date).toLocaleDateString('en-US', {
                     year: 'numeric',
@@ -80,7 +80,6 @@ const EditableTakeawayTable: React.FC<Props> = ({ marketData }) => {
             title: 'Publication',
             dataIndex: 'publication',
             key: 'publication',
-            width: 200, // Example width
             render: (text: string) => (
                 <div className="flex items-center">
                     <BsFileEarmarkText className="mr-2" />
@@ -92,7 +91,6 @@ const EditableTakeawayTable: React.FC<Props> = ({ marketData }) => {
             title: 'Report Link',
             dataIndex: 'report_link',
             key: 'report_link',
-            width: 150, // Example width
             render: (link: string) => (
                 <a
                     href={link}
@@ -105,25 +103,10 @@ const EditableTakeawayTable: React.FC<Props> = ({ marketData }) => {
             ),
         },
         {
-            title: 'Upload User', // New column
-            dataIndex: 'upload_user_email',
-            key: 'upload_user_email',
-            width: 150, // Example width
-        },
-        {
-            title: 'Update User', // New column
-            dataIndex: 'update_user_email',
-            key: 'update_user_email',
-            width: 150, // Example width
-            render: (email: string | null) => (email === null ? 'N/A' : email), // Corrected type for render parameter
-        },
-        {
             title: 'Key Takeaway',
             dataIndex: 'takeaway',
             key: 'takeaway',
-            // No fixed width here allows it to take remaining space, or you can set a large one
-            // width: 400, // Example large width if needed
-            render: (text: string, record: ReportData) =>
+            render: (text: string, record: MarketItem) =>
                 isEditing(record) ? (
                     <div>
                         <Input.TextArea
@@ -147,6 +130,19 @@ const EditableTakeawayTable: React.FC<Props> = ({ marketData }) => {
                     </div>
                 ),
         },
+        {
+      title: "Actions",
+      key: "actions",
+      render: (_, record: MarketItem) => (
+        <Button
+          danger
+          onClick={() => onDelete(record.id)}
+        >
+          Delete
+        </Button>
+      ),
+      width: 100
+    }
     ];
 
     return (
@@ -156,8 +152,6 @@ const EditableTakeawayTable: React.FC<Props> = ({ marketData }) => {
                 columns={columns}
                 rowKey="id"
                 pagination={false}
-                // Add scroll property for horizontal scrolling if widths exceed container
-                scroll={{ x: 'max-content' }}
             />
         </div>
     );

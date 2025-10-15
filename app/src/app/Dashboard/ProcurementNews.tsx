@@ -14,17 +14,17 @@ interface DailyUpdate {
 }
 
 interface ProcurementNewsProps {
-  materialCode: string;
+  materialId: string;
   region: string;
 }
 
-const ProcurementNews: React.FC<ProcurementNewsProps> = ({ materialCode, region }) => {
+const ProcurementNews: React.FC<ProcurementNewsProps> = ({ materialId, region }) => {
   const { getDailyUpdate } = useBusinessAPI();
 
   const { data: dailyUpdates, isLoading: isLoadingDailyUpdates } = useQuery<DailyUpdate[]>({
-    queryKey: ["dailyUpdates", materialCode, region],
-    queryFn: () => getDailyUpdate(materialCode, region),
-    enabled: !!materialCode && !!region,
+    queryKey: ["dailyUpdates", materialId, region],
+    queryFn: () => getDailyUpdate(materialId, region),
+    enabled: !!materialId && !!region,
   });
 
   return (

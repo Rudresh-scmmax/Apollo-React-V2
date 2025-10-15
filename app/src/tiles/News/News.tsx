@@ -10,7 +10,7 @@ import { FiSettings } from "react-icons/fi";
 import UploadNewsInsight from "../../common/UploadNewsInsight";
 
 const News: React.FC<any> = () => {
-  const { getNewsInsights, getRegions } = useBusinessAPI();
+  const { getNewsInsights, getNewsLocations } = useBusinessAPI();
   const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
 
@@ -18,13 +18,13 @@ const News: React.FC<any> = () => {
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
-  const { data: regions } = useQuery<string[]>({
-      queryKey: ["regions", selectedMaterial?.material_code],
-      queryFn: () => getRegions(selectedMaterial?.material_code || "", "news_highlight"),
-      enabled: !!selectedMaterial?.material_code,
+  const { data: locations } = useQuery<{location_id: number, location_name: string}[]>({
+      queryKey: ["newsLocations", selectedMaterial?.material_id],
+      queryFn: () => getNewsLocations(selectedMaterial?.material_id || ""),
+      enabled: !!selectedMaterial?.material_id,
     });
 
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!selectedMaterial) {
@@ -33,16 +33,16 @@ const News: React.FC<any> = () => {
   }, [selectedMaterial, navigate]);
 
   useEffect(() => {
-    if (regions && regions.length > 0 && !selectedRegion) {
-      setSelectedRegion(regions[0]);
+    if (locations && locations.length > 0 && selectedLocationId === null) {
+      setSelectedLocationId(locations[0].location_id);
     }
-  }, [regions, selectedRegion]);
+  }, [locations, selectedLocationId]);
 
   const { data: newsInsights, isLoading } = useQuery({
-    queryKey: ["newsInsights", selectedMaterial?.material_code, selectedRegion],
+    queryKey: ["newsInsights", selectedMaterial?.material_id, selectedLocationId],
     queryFn: () =>
-      getNewsInsights(selectedMaterial?.material_code, selectedRegion),
-    enabled: !!selectedMaterial?.material_code && !!selectedRegion,
+      getNewsInsights(selectedMaterial?.material_id, selectedLocationId || undefined),
+    enabled: !!selectedMaterial?.material_id && selectedLocationId !== null,
   });
 
   const columns = [
@@ -60,16 +60,16 @@ const News: React.FC<any> = () => {
     },
     {
       title: "Link",
-      dataIndex: "news_url",
-      key: "news_url",
-      render: (news_url: string) => (
+      dataIndex: "source_link",
+      key: "source_link",
+      render: (source_link: string) => (
         <a
-          href={news_url}
+          href={source_link}
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-600 hover:text-blue-800 flex items-center"
         >
-          {news_url ? "View Report" : ""}
+          {source_link ? "View Report" : ""}
         </a>
       ),
     },
@@ -83,8 +83,8 @@ const News: React.FC<any> = () => {
 
   const dataSource = newsInsights?.map((item: any, index: number) => ({
     key: index,
-    date: item.date,
-    news_url: item.news_url,
+    date: item.published_date,
+    source_link: item.source_link,
     title: item.title,
     source: item.source,
   }));
@@ -99,9 +99,14 @@ const News: React.FC<any> = () => {
         </h1>
         <div className="flex items-center gap-4">
         <RegionSelector
-          regions={regions}
-          selectedRegion={selectedRegion}
-          setSelectedRegion={setSelectedRegion}
+          regions={locations?.map(loc => loc.location_name) || []}
+          selectedRegion={locations?.find(loc => loc.location_id === selectedLocationId)?.location_name || ""}
+          setSelectedRegion={(locationName: string) => {
+            const location = locations?.find(loc => loc.location_name === locationName);
+            if (location) {
+              setSelectedLocationId(location.location_id);
+            }
+          }}
         />
         <button
           className="text-gray-600 hover:text-gray-900 text-2xl"

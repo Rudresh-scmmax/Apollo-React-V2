@@ -5,7 +5,7 @@ const businessApiUrl = (import.meta as any).env.VITE_BUSINESS_API_URL;
 
 export type Material = {
   material_description: string;
-  material_code: string;
+  material_id: string;
 };
 
 export type Tile = {
@@ -14,12 +14,12 @@ export type Tile = {
 };
 
 interface BusinessContextType {
-  uploadPDF: (file: File, material_code: string) => Promise<any>;
+  uploadPDF: (file: File, material_id: string) => Promise<any>;
   checkPDFStatus: (id: string) => Promise<any>;
   getTakeaways: (selectedMaterial?: string) => Promise<any[]>;
   getMaterials: () => Promise<Material[]>;
   addMaterial: (material: string) => Promise<void>;
-  getDailyUpdate: (material_code: string, region:string) => Promise<any>;
+  getDailyUpdate: (material_id: string, region:string) => Promise<any>;
   checkTiles: () => Promise<Tile[]>;
   getMaterialPriceHistory: (
     selectedMaterial?: string,
@@ -40,15 +40,15 @@ interface BusinessContextType {
   ) => Promise<StrategyRecommendation>;
   toggleTile: (tile: string, active: boolean) => Promise<void>;
   uploadPriceHistory: (file: File) => Promise<any>;
-  uploadNewsHighlight: (file: File, material_code: string) => Promise<any>;
+  uploadNewsHighlight: (file: File, material_id: string) => Promise<any>;
   updateTakeaway: (id?: number, takeaway?: string) => Promise<any>;
   getDemandSupplyTrends: (
     selectedMaterial?: string,
-    region?: string
+    location_id?: number
   ) => Promise<any[]>;
   getNewsInsights: (
     selectedMaterial?: string,
-    region?: string
+    location_id?: number
   ) => Promise<any[]>;
   getNewsSupplierTracking: (
     selectedMaterial?: string,
@@ -58,16 +58,18 @@ interface BusinessContextType {
     selectedMaterial?: string,
     region?: string
   ) => Promise<any[]>;
-  getHistoricalPrices: (materialCode: string, region: string) => Promise<any>;
+  getHistoricalPrices: (materalId: string, region: string) => Promise<any>;
   getProcurementPlan: (
     PlantCode?: string,
     selectedMaterial?: string
   ) => Promise<ProcurementPlanResponse>;
-  getPlantCode: (material_code: string, notnull_column?: string) => Promise<any>;
-  getMinutesOfMeeting: (materialCode: string) => Promise<any>;
-  getJointDevelopmentProjects: (materialCode: string) => Promise<any>;
-  getMultiplePointEngagemeants: (materialCode: string) => Promise<any>;
-  getRegions: (material_code: string, notnull_column?: string) => Promise<any>;
+  getPlantCode: (material_id: string, notnull_column?: string) => Promise<{plant_id: number, plant_name: string}[]>;
+  getMinutesOfMeeting: (materalId: string) => Promise<any>;
+  getJointDevelopmentProjects: (materalId: string) => Promise<any>;
+  getMultiplePointEngagemeants: (materalId: string) => Promise<any>;
+  getRegions: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
+  getNewsLocations: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
+  getDemandSupplyLocations: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
   uploadEmailContent: (data: {
     subject: string;
     body: string;
@@ -80,25 +82,25 @@ interface BusinessContextType {
   updateMultiplePointEngagement: (id: number, data: any) => Promise<any>;
   deleteMultiplePointEngagement: (id: number) => Promise<any>;
   getCorrelationMaterialPrice: (
-    materialCode: string,
-    correlated_material_code?: string
+    materalId: string,
+    correlated_material_id?: string
   ) => Promise<any>;
   getProcurementFilters: (
-    materialCode: string
+    materalId: string
   ) => Promise<{ years: string[]; buyer_names: string[] }>;
   getProcurementHistory: (params: {
-    materialCode: string;
+    materalId: string;
     buyerName?: string;
     year?: string;
   }) => Promise<any[]>;
-  getSupplierRegion: (material_code: string) => Promise<string[]>;
-  getShutdownRegions: (material_code: string) => Promise<string[]>;
-  getInventoryLevels: (materialCode: string) => Promise<any>;
-  getVendorWiseActionPlan: (materialCode: string) => Promise<any>;
-  getVendorKeyInformation: (materialCode: string) => Promise<any>;
-  getMaterialSubtituteData: (materialCode: string, plant_code: string, region?: string) => Promise<any>;
-  getFactPackData: (materialCode: string) => Promise<any>;
-  uploadFactPackFile: (file: File, material_code: string) => Promise<any>;
+  getSupplierRegion: (material_id: string) => Promise<string[]>;
+  getShutdownRegions: (material_id: string) => Promise<string[]>;
+  getInventoryLevels: (materalId: string) => Promise<any>;
+  getVendorWiseActionPlan: (materalId: string) => Promise<any>;
+  getVendorKeyInformation: (materalId: string) => Promise<any>;
+  getMaterialSubtituteData: (materalId: string, plant_code: string, region?: string) => Promise<any>;
+  getFactPackData: (materalId: string) => Promise<any>;
+  uploadFactPackFile: (file: File, material_id: string) => Promise<any>;
   processQuotations: (files: string[]) => Promise<any>;
   getQuotations: (material?: string, limit?: number) => Promise<any>;
   getQuotationAnalysis: (material?: string) => Promise<any>;
@@ -106,28 +108,28 @@ interface BusinessContextType {
   getTradeData: (material: string, year: string) => Promise<any>;
   getSupplierTrend: (year: number, material: string) => Promise<any>;
   getPriceHistoryTrend: (year: number, material: string) => Promise<any>;
-  getPortersAnalysis: (materialCode: string) => Promise<any>;
-  refreshPortersAnalysis: (materialCode: string, forceRefresh?: boolean) => Promise<any>;
-  uploadSingleNewsHighlight: (title: string, published_date: string, news_url: string, material_code: string) => Promise<any>;
+  getPortersAnalysis: (materalId: string) => Promise<any>;
+  refreshPortersAnalysis: (materalId: string, forceRefresh?: boolean) => Promise<any>;
+  uploadSingleNewsHighlight: (title: string, published_date: string, news_url: string, material_id: string) => Promise<any>;
   updateShutdownTracking: (
     updateData: ShutdownTrackingUpdateInput
   ) => Promise<any>;
-  getSeasonalityTrends: (material_code: string, region: string) => Promise<any>;
+  getSeasonalityTrends: (material_id: string, region: string) => Promise<any>;
   updateVendorKeyInformation: (
     rowData: VendorKeyInfoUpdate) => Promise<any>;
-  getVendors: (material_code: string) => Promise<string[]>;
+  getVendors: (material_id: string) => Promise<string[]>;
   getNegotiationObjectives: (vendor_name: string, date: string) => Promise<any>;
-  createNegotiationObjectives: (vendor_name: string, date: string, objectives: NegotiationData, material_code: string) => Promise<any>;
-  getNegotiationAvoids: (vendor: string, date: string, material_code?: string, signals?: any) => Promise<any>;
+  createNegotiationObjectives: (vendor_name: string, date: string, objectives: NegotiationData, material_id: string) => Promise<any>;
+  getNegotiationAvoids: (vendor: string, date: string, material_id?: string, signals?: any) => Promise<any>;
   uploadSpendAnalysis: (file: File) => Promise<any>;
-  triggerForecast: (material_code: string, region: string) => Promise<any>;
-  getTargetNegotiation: (material_code: string, date: string, vendor_name: string) => Promise<any>;
+  triggerForecast: (material_id: string, region: string) => Promise<any>;
+  getTargetNegotiation: (material_id: string, date: string, vendor_name: string) => Promise<any>;
   getTcoPrices: (vendor_name: string, date: string) => Promise<any>;
-  getShouldBePrice: (material_code: string, date: string) => Promise<any>;
-  getExportPrice: (material_code: string, date: string) => Promise<any>;
-  getImportPrice: (material_code: string, date: string) => Promise<any>;
-  refreshRecommendation: (vendor_name: string, date: string, material_code: string) => Promise<any>;
-  negotiationRecommendations: (vendor_name: string, date: string, material_code: string) => Promise<any>;
+  getShouldBePrice: (material_id: string, date: string) => Promise<any>;
+  getExportPrice: (material_id: string, date: string) => Promise<any>;
+  getImportPrice: (material_id: string, date: string) => Promise<any>;
+  refreshRecommendation: (vendor_name: string, date: string, material_id: string) => Promise<any>;
+  negotiationRecommendations: (vendor_name: string, date: string, material_id: string) => Promise<any>;
   updatePlanStatus: (planId: string,
     status: string,
     file?: File) => Promise<any>
@@ -214,15 +216,38 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getRegions = async (
-    material_code: string,
-    notnull_column?: string
-  ): Promise<string[]> => {
+    material_id: string,
+  ): Promise<{location_id: number, location_name: string}[]> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
-    notnull_column &&
-      queryParams.append("column_not_tobe_null", notnull_column);
+    queryParams.append("material_id", material_id);
     return fetchWrapper(
-      `${businessApiUrl}/price_regions?${queryParams.toString()}`,
+      `${businessApiUrl}/price-regions?${queryParams.toString()}`,
+      {
+        method: "GET",
+      }
+    );
+  };
+
+  const getNewsLocations = async (
+    material_id: string,
+  ): Promise<{location_id: number, location_name: string}[]> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("material_id", material_id);
+    return fetchWrapper(
+      `${businessApiUrl}/news-locations?${queryParams.toString()}`,
+      {
+        method: "GET",
+      }
+    );
+  };
+
+  const getDemandSupplyLocations = async (
+    material_id: string,
+  ): Promise<{location_id: number, location_name: string}[]> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("material_id", material_id);
+    return fetchWrapper(
+      `${businessApiUrl}/demand-supply-locations?${queryParams.toString()}`,
       {
         method: "GET",
       }
@@ -230,10 +255,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getShutdownRegions = async (
-    material_code: string
+    material_id: string
   ): Promise<string[]> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     return fetchWrapper(
       `${businessApiUrl}/shutdown_regions?${queryParams.toString()}`,
       {
@@ -243,10 +268,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getSupplierRegion = async (
-    material_code: string
+    material_id: string
   ): Promise<string[]> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     return fetchWrapper(
       `${businessApiUrl}/supplier_regions?${queryParams.toString()}`,
       {
@@ -255,9 +280,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     );
   };
 
-  const getPlantCode = async (material_code: string): Promise<string[]> => {
+  const getPlantCode = async (material_id: string): Promise<{plant_id: number, plant_name: string}[]> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     return fetchWrapper(
       `${businessApiUrl}/get-plantcode?${queryParams.toString()}`,
       {
@@ -276,9 +301,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     setMaterials((prev) => [...prev, material]);
   };
 
-  const getDailyUpdate = async (material_code: string, region: string): Promise<any> => {
+  const getDailyUpdate = async (material_id: string, region: string): Promise<any> => {
   const queryParams = new URLSearchParams();
-  if (material_code) queryParams.append("material_code", material_code);
+  if (material_id) queryParams.append("material_id", material_id);
   if (region) queryParams.append("region", region);
   return fetchWrapper(`${businessApiUrl}/dailyUpdates?${queryParams.toString()}`, {
     method: "GET",
@@ -301,10 +326,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const uploadPDF = async (file: File, material_code: string): Promise<any> => {
+  const uploadPDF = async (file: File, material_id: string): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("materialCode", material_code);
+    formData.append("material_id", material_id);
 
     return fetchWrapper(`${businessApiUrl}/upload-pdf`, {
       method: "POST",
@@ -320,7 +345,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getTakeaways = async (selectedMaterial?: string): Promise<any[]> => {
     const queryParam = selectedMaterial
-      ? `?material_code=${encodeURIComponent(selectedMaterial)}`
+      ? `?material_id=${encodeURIComponent(selectedMaterial)}`
       : "";
     return fetchWrapper(`${businessApiUrl}/takeaway${queryParam}`, {
       method: "GET",
@@ -334,7 +359,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
-    if (selectedMaterial) queryParams.append("material_code", selectedMaterial);
+    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
     if (region) queryParams.append("region", region);
     if (limit) queryParams.append("limit", limit.toString());
 
@@ -384,7 +409,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
-    if (selectedMaterial) queryParams.append("material_code", selectedMaterial);
+    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
     if (region) queryParams.append("region", region);
 
     const queryString = queryParams.toString()
@@ -402,7 +427,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   ): Promise<StrategyRecommendation> => {
     const queryParams = new URLSearchParams();
 
-    if (selectedMaterial) queryParams.append("material_code", selectedMaterial);
+    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
     if (region) queryParams.append("region", region);
 
     const queryString = queryParams.toString()
@@ -424,10 +449,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const uploadNewsHighlight = async (file: File, material_code: string): Promise<any> => {
+  const uploadNewsHighlight = async (file: File, material_id: string): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("material_code", material_code);
+    formData.append("material_id", material_id);
 
     return fetchWrapper(`${businessApiUrl}/upload-news-file`, {
       method: "POST",
@@ -437,30 +462,30 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getDemandSupplyTrends = async (
     selectedMaterial?: string,
-    region?: string
+    location_id?: number
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
-    if (selectedMaterial) queryParams.append("material_code", selectedMaterial);
-    if (region) queryParams.append("region", region);
+    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
+    if (location_id) queryParams.append("location_id", location_id.toString());
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
       : "";
 
-    return fetchWrapper(`${businessApiUrl}/demand-supply-trend${queryString}`, {
+    return fetchWrapper(`${businessApiUrl}/demand-supply-trends${queryString}`, {
       method: "GET",
     });
   };
 
   const getNewsInsights = async (
     selectedMaterial?: string,
-    region?: string
+    location_id?: number
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
-    if (selectedMaterial) queryParams.append("material_code", selectedMaterial);
-    if (region) queryParams.append("region", region);
+    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
+    if (location_id) queryParams.append("location_id", location_id.toString());
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
@@ -477,7 +502,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
-    if (selectedMaterial) queryParams.append("material_code", selectedMaterial);
+    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
     if (region) queryParams.append("region", region);
 
     const queryString = queryParams.toString()
@@ -495,7 +520,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
-    if (selectedMaterial) queryParams.append("material_code", selectedMaterial);
+    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
     if (region) queryParams.append("region", region);
 
     const queryString = queryParams.toString()
@@ -511,10 +536,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   const updateShutdownTracking = async (
     updateData: ShutdownTrackingUpdateInput
   ): Promise<any> => {
-    const { material_code, region, date, shutdown_from, shutdown_to } = updateData;
+    const { material_id, region, date, shutdown_from, shutdown_to } = updateData;
 
-    if (!material_code || !region || !date) {
-      throw new Error("Fields 'material_code', 'region', and 'date' are required.");
+    if (!material_id || !region || !date) {
+      throw new Error("Fields 'material_id', 'region', and 'date' are required.");
     }
 
     if (shutdown_from === undefined && shutdown_to === undefined) {
@@ -538,7 +563,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     const queryParams = new URLSearchParams();
 
     if (PlantCode) queryParams.append("plant_code", PlantCode);
-    if (selectedMaterial) queryParams.append("material_code", selectedMaterial);
+    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
@@ -550,11 +575,11 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getHistoricalPrices = async (
-    materialCode: string,
+    materalId: string,
     region: string
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
     queryParams.append("region", region);
 
     return fetchWrapper(
@@ -565,9 +590,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     );
   };
 
-  const getMinutesOfMeeting = async (materialCode: string): Promise<any> => {
+  const getMinutesOfMeeting = async (materalId: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
 
     return fetchWrapper(
       `${businessApiUrl}/minutes-of-meeting?${queryParams.toString()}`,
@@ -578,10 +603,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getJointDevelopmentProjects = async (
-    materialCode: string
+    materalId: string
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
 
     return fetchWrapper(
       `${businessApiUrl}/joint-development-projects?${queryParams.toString()}`,
@@ -592,10 +617,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getMultiplePointEngagemeants = async (
-    materialCode: string
+    materalId: string
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
 
     return fetchWrapper(
       `${businessApiUrl}/multiple-point-engagements?${queryParams.toString()}`,
@@ -681,13 +706,13 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getCorrelationMaterialPrice = async (
-    materialCode: string,
-    correlated_material_code?: string
+    materalId: string,
+    correlated_material_id?: string
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
-    if (correlated_material_code) {
-      queryParams.append("correlated_material_code", correlated_material_code);
+    queryParams.append("material_id", materalId);
+    if (correlated_material_id) {
+      queryParams.append("correlated_material_id", correlated_material_id);
     }
 
     return fetchWrapper(
@@ -699,10 +724,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getProcurementFilters = async (
-    materialCode: string
+    materalId: string
   ): Promise<{ years: string[]; buyer_names: string[] }> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
 
     return fetchWrapper(
       `${businessApiUrl}/procurement-filters?${queryParams.toString()}`,
@@ -710,9 +735,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     );
   };
 
-  const getInventoryLevels = async (materialCode: string): Promise<any> => {
+  const getInventoryLevels = async (materalId: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
 
     return fetchWrapper(
       `${businessApiUrl}/inventory-levels?${queryParams.toString()}`,
@@ -723,9 +748,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   // Get Vendor Wise Action Plan
-  const getVendorWiseActionPlan = async (materialCode: string): Promise<any> => {
+  const getVendorWiseActionPlan = async (materalId: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
     return fetchWrapper(`${businessApiUrl}/plans?${queryParams.toString()}`, {
       method: "GET",
     });
@@ -794,16 +819,16 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getProcurementHistory = async ({
-    materialCode,
+    materalId,
     buyerName,
     year,
   }: {
-    materialCode: string;
+    materalId: string;
     buyerName?: string;
     year?: string;
   }): Promise<any[]> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
     if (buyerName) queryParams.append("buyer_name", buyerName);
     if (year) queryParams.append("year", year);
 
@@ -815,10 +840,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getVendorKeyInformation = async (
-    materialCode: string
+    materalId: string
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
 
     return fetchWrapper(
       `${businessApiUrl}/vendor-key-information?${queryParams.toString()}`,
@@ -829,10 +854,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getMaterialSubtituteData = async (
-    materialCode: string, plant_code: string, region?: string
+    materalId: string, plant_code: string, region?: string
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
     queryParams.append("plant_code", plant_code);
     if (region) queryParams.append("region", region);
 
@@ -844,9 +869,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     );
   };
 
-  const getFactPackData = async (materialCode: string): Promise<any> => {
+  const getFactPackData = async (materalId: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
 
     return fetchWrapper(
       `${businessApiUrl}/fact-pack?${queryParams.toString()}`,
@@ -858,11 +883,11 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const uploadFactPackFile = async (
     file: File,
-    material_code: string
+    material_id: string
   ): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("materialCode", material_code);
+    formData.append("materalId", material_id);
 
     return fetchWrapper(`${businessApiUrl}/fact-pack-upload-pdf`, {
       method: "POST",
@@ -898,7 +923,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
 
-    if (material) queryParams.append("material_code", material);
+    if (material) queryParams.append("material_id", material);
     if (year) queryParams.append("year", String(year));
 
     const queryString = queryParams.toString()
@@ -916,7 +941,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
 
-    if (material) queryParams.append("material_code", material);
+    if (material) queryParams.append("material_id", material);
     if (year) queryParams.append("year", String(year));
 
     const queryString = queryParams.toString()
@@ -930,9 +955,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
 
   // Porter's Five Forces Analysis
-  const refreshPortersAnalysis = async (materialCode: string, forceRefresh?: boolean): Promise<any> => {
+  const refreshPortersAnalysis = async (materalId: string, forceRefresh?: boolean): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
     if (forceRefresh) queryParams.append("force_refresh", "true");
     return fetchWrapper(
       `${businessApiUrl}/porters-analysis?${queryParams.toString()}`,
@@ -940,9 +965,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     );
   };
 
-  const getPortersAnalysis = async (materialCode: string): Promise<any> => {
+  const getPortersAnalysis = async (materalId: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", materialCode);
+    queryParams.append("material_id", materalId);
     return fetchWrapper(
       `${businessApiUrl}/porters-analysis/result?${queryParams.toString()}`,
       { method: "GET" }
@@ -950,7 +975,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const uploadSingleNewsHighlight = async (
-    title: string, published_date: string, news_url: string, material_code: string
+    title: string, published_date: string, news_url: string, material_id: string
   ): Promise<any> => {
     return fetchWrapper(`${businessApiUrl}/upsert-news-highlight`, {
       method: "POST",
@@ -961,7 +986,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
         title,
         published_date,
         news_url,
-        material_code
+        material_id
       }),
     });
   }
@@ -976,9 +1001,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const getVendors = async (material_code: string): Promise<any[]> => {
+  const getVendors = async (material_id: string): Promise<any[]> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     return fetchWrapper(`${businessApiUrl}/get-vendors?${queryParams.toString()}`, {
       method: "GET",
     });
@@ -993,30 +1018,30 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   }
 
-  const refreshRecommendation = async (vendor_name: string, date: string, material_code: string): Promise<any> => {
+  const refreshRecommendation = async (vendor_name: string, date: string, material_id: string): Promise<any> => {
     const queryParams = new URLSearchParams();
     queryParams.append("vendor_name", vendor_name);
     queryParams.append("date", date);
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
 
     return fetchWrapper(`${businessApiUrl}/refresh-recommendation?${queryParams.toString()}`, {
       method: "GET",
     });
   };
 
-  const negotiationRecommendations = async (vendor_name: string, date: string, material_code: string): Promise<any> => {
+  const negotiationRecommendations = async (vendor_name: string, date: string, material_id: string): Promise<any> => {
     const queryParams = new URLSearchParams();
     queryParams.append("vendor_name", vendor_name);
     queryParams.append("date", date);
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     return fetchWrapper(`${businessApiUrl}/negotiation-recommendations?${queryParams.toString()}`, {
       method: "GET",
     });
   };
 
-  const getSeasonalityTrends = async (material_code: string, region: string): Promise<any> => {
+  const getSeasonalityTrends = async (material_id: string, region: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     queryParams.append("region", region);
     return fetchWrapper(`${businessApiUrl}/seasonality-trends?${queryParams.toString()}`, {
       method: "GET",
@@ -1027,14 +1052,14 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     vendor_name: string,
     date: string,
     objectives: NegotiationData,
-    material_code: string
+    material_id: string
   ): Promise<any> => {
     return fetchWrapper(`${businessApiUrl}/create-negotiation-objectives`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ vendor_name, date, objectives, material_code }),
+      body: JSON.stringify({ vendor_name, date, objectives, material_id }),
     });
   };
 
@@ -1051,7 +1076,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
 
   const triggerForecast = async (
-    material_code: string,
+    material_id: string,
     region: string
   ): Promise<any> => {
     return fetchWrapper(`${businessApiUrl}/trigger-forecast`, {
@@ -1059,14 +1084,14 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ material_code, region }),
+      body: JSON.stringify({ material_id, region }),
     });
   };
 
 
-  const getTargetNegotiation = async (material_code: string, date: string, vendor_name: string): Promise<any> => {
+  const getTargetNegotiation = async (material_id: string, date: string, vendor_name: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     queryParams.append("date", date);
     queryParams.append("vendor_name", vendor_name);
     return fetchWrapper(`${businessApiUrl}/target-negotiation?${queryParams.toString()}`, {
@@ -1075,18 +1100,18 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
 
-  const getExportPrice = async (material_code: string, date: string): Promise<any> => {
+  const getExportPrice = async (material_id: string, date: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     queryParams.append("date", date);
     return fetchWrapper(`${businessApiUrl}/get-export-price?${queryParams.toString()}`, {
       method: "GET",
     });
   };
 
-  const getImportPrice = async (material_code: string, date: string): Promise<any> => {
+  const getImportPrice = async (material_id: string, date: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     queryParams.append("date", date);
     return fetchWrapper(`${businessApiUrl}/get-import-price?${queryParams.toString()}`, {
       method: "GET",
@@ -1103,9 +1128,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   }
 
-  const getShouldBePrice = async (material_code: string, date: string): Promise<any> => {
+  const getShouldBePrice = async (material_id: string, date: string): Promise<any> => {
     const queryParams = new URLSearchParams();
-    queryParams.append("material_code", material_code);
+    queryParams.append("material_id", material_id);
     queryParams.append("date", date);
     return fetchWrapper(`${businessApiUrl}/should-be-price?${queryParams.toString()}`, {
       method: "GET",
@@ -1115,7 +1140,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   const getNegotiationAvoids = async (
     vendor: string,
     date: string,
-    material_code?: string,
+    material_id?: string,
     signals?: {
       objective?: string;
       market_info?: string;
@@ -1128,8 +1153,8 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
       date,
     };
 
-    if (material_code) {
-      payload.material_code = material_code;
+    if (material_id) {
+      payload.material_id = material_id;
     }
 
     if (signals) {
@@ -1189,6 +1214,8 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     updateMaterialPriceHistory,
     getMaterialPrices,
     getRegions,
+    getNewsLocations,
+    getDemandSupplyLocations,
     getRecomendations,
     uploadPriceHistory,
     updateTakeaway,

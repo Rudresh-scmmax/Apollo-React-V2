@@ -8,20 +8,20 @@ import { useNavigate } from "react-router-dom";
 import RegionSelector from "../../common/RegionSelector";
 
 const DemandSupplyTrend: React.FC<any> = () => {
-  const { getDemandSupplyTrends, getRegions } = useBusinessAPI();
+  const { getDemandSupplyTrends, getDemandSupplyLocations } = useBusinessAPI();
   const navigate = useNavigate();
 
   const selectedMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial
   );
  
-  const { data: regions } = useQuery<string[]>({
-      queryKey: ["regions", selectedMaterial?.material_code],
-      queryFn: () => getRegions(selectedMaterial?.material_code || "", 'factors_influencing_supply'),
-      enabled: !!selectedMaterial?.material_code,
+  const { data: locations } = useQuery<{location_id: number, location_name: string}[]>({
+      queryKey: ["demandSupplyLocations", selectedMaterial?.material_id],
+      queryFn: () => getDemandSupplyLocations(selectedMaterial?.material_id || ""),
+      enabled: !!selectedMaterial?.material_id,
     });
 
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!selectedMaterial?.material_description) {
@@ -30,26 +30,26 @@ const DemandSupplyTrend: React.FC<any> = () => {
   }, [selectedMaterial, navigate]);
 
   useEffect(() => {
-    if (regions && regions.length > 0 && !selectedRegion) {
-      setSelectedRegion(regions[0]);
+    if (locations && locations.length > 0 && selectedLocationId === null) {
+      setSelectedLocationId(locations[0].location_id);
     }
-  }, [regions, selectedRegion]);
+  }, [locations, selectedLocationId]);
 
   const { data: demandSupplyTrends, isLoading } = useQuery({
-    queryKey: ["demandSupplyTrends", selectedMaterial, selectedRegion],
+    queryKey: ["demandSupplyTrends", selectedMaterial?.material_id, selectedLocationId],
     queryFn: () =>
       getDemandSupplyTrends(
-        selectedMaterial?.material_code,
-        selectedRegion
+        selectedMaterial?.material_id,
+        selectedLocationId || undefined
       ),
-    enabled: !!selectedMaterial && !!selectedRegion,
+    enabled: !!selectedMaterial?.material_id && selectedLocationId !== null,
   });
 
   const columns = [
     {
       title: "Date",
-      dataIndex: "date",
-      key: "date",
+      dataIndex: "source_published_date",
+      key: "source_published_date",
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
@@ -60,16 +60,16 @@ const DemandSupplyTrend: React.FC<any> = () => {
     },
     {
       title: "Link",
-      dataIndex: "news_url",
-      key: "news_url",
-      render: (news_url: string) => (
+      dataIndex: "source_link",
+      key: "source_link",
+      render: (source_link: string) => (
         <a
-          href={news_url}
+          href={source_link}
           target="_blank"
           rel="noopener noreferrer"
           className="text-blue-600 hover:text-blue-800 flex items-center"
         >
-          {news_url ? "View Report" : ""}
+          {source_link ? "View Report" : ""}
         </a>
       ),
     },
@@ -89,14 +89,10 @@ const DemandSupplyTrend: React.FC<any> = () => {
 
   const dataSource = demandSupplyTrends?.map((item: any, index: number) => ({
     key: index,
-    date: item.date,
-    news_url: item.demand_factor?.news_url || item.supply_factor?.news_url,
-    title:
-      item.demand_factor?.title ||
-      item.supply_factor?.title ||
-      item.demand_factor ||
-      item.supply_factor,
-    impact: item.demand_factor !== null ? "Demand" : "Supply",
+    source_published_date: item.source_published_date,
+    source_link: item.source_link,
+    title: item.demand_impact || item.supply_impact,
+    impact: item.demand_impact !== null ? "Demand" : "Supply",
     source: item.source,
   }));
 
@@ -108,9 +104,14 @@ const DemandSupplyTrend: React.FC<any> = () => {
           Demand Supply Trend for: {selectedMaterial?.material_description || "All Material"}
         </h1>
         <RegionSelector
-          regions={regions}
-          selectedRegion={selectedRegion}
-          setSelectedRegion={setSelectedRegion}
+          regions={locations?.map(loc => loc.location_name) || []}
+          selectedRegion={locations?.find(loc => loc.location_id === selectedLocationId)?.location_name || ""}
+          setSelectedRegion={(locationName: string) => {
+            const location = locations?.find(loc => loc.location_name === locationName);
+            if (location) {
+              setSelectedLocationId(location.location_id);
+            }
+          }}
         />
       </div>
 

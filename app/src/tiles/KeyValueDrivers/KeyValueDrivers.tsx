@@ -19,19 +19,19 @@ const KeyValueDrivers: React.FC = () => {
     queryFn: getMaterials,
   });
 
-  // Query for correlation material price, passing correlated_material_code if selected
+  // Query for correlation material price, passing correlated_material_id if selected
   const { data, isLoading } = useQuery({
     queryKey: [
       "correlation-material-price",
-      selectedMaterial?.material_code,
+      selectedMaterial?.material_id,
       manualCorrelated,
     ],
     queryFn: () =>
       getCorrelationMaterialPrice(
-        selectedMaterial?.material_code || "",
+        selectedMaterial?.material_id || "",
         manualCorrelated || undefined
       ),
-    enabled: !!selectedMaterial?.material_code,
+    enabled: !!selectedMaterial?.material_id,
   });
 
   // Prepare chart data
@@ -108,9 +108,9 @@ const KeyValueDrivers: React.FC = () => {
           >
             <option value="">Auto (Most Correlated)</option>
             {materials
-              ?.filter((mat) => mat.material_code !== selectedMaterial?.material_code)
+              ?.filter((mat) => mat.material_id !== selectedMaterial?.material_id)
               .map((material) => (
-                <option key={material.material_code} value={material.material_code}>
+                <option key={material.material_id} value={material.material_id}>
                   {material.material_description}
                 </option>
               ))}

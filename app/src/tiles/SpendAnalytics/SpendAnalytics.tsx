@@ -26,8 +26,8 @@ const SpendAnalytics: React.FC = () => {
 
   // Fetch filters on mount
   useEffect(() => {
-    if (selectedMaterial?.material_code) {
-      getProcurementFilters(selectedMaterial.material_code).then((res) => {
+    if (selectedMaterial?.material_id) {
+      getProcurementFilters(selectedMaterial.material_id).then((res) => {
         const yearsList = res.years && res.years.length > 0 ? res.years : [];
         setYears(["All", ...yearsList]);
         const buyersList =
@@ -41,7 +41,7 @@ const SpendAnalytics: React.FC = () => {
     if (!selectedYear && !selectedBuyer) return;
     setLoading(true);
     getProcurementHistory({
-      materialCode: selectedMaterial?.material_code ?? "",
+      materalId: selectedMaterial?.material_id ?? "",
       year: selectedYear === "All" ? "" : selectedYear,
       buyerName: selectedBuyer === "All" ? "" : selectedBuyer,
     })
@@ -49,22 +49,22 @@ const SpendAnalytics: React.FC = () => {
       .finally(() => setLoading(false));
   }, [selectedYear, selectedBuyer]);
 
-  // Pie chart data by region
+  // Pie chart data by region (use plant_name)
   const pieData = useMemo(() => {
     const regionMap: Record<string, number> = {};
     history.forEach((row) => {
-      const region = row.supplier_site || "Unknown";
+      const region = row.plant_name || "Unknown";
       regionMap[region] = (regionMap[region] || 0) + Number(row.quantity || 0);
     });
     return Object.entries(regionMap).map(([name, value]) => ({ name, value }));
   }, [history]);
 
-  // Pie chart for value by region
+  // Pie chart for value by region (use total_cost)
   const pieValueData = useMemo(() => {
     const regionMap: Record<string, number> = {};
     history.forEach((row) => {
-      const region = row.supplier_site || "Unknown";
-      const value = Number(row.base_price_fc || 0);
+      const region = row.plant_name || "Unknown";
+      const value = Number(row.total_cost || 0);
       regionMap[region] = (regionMap[region] || 0) + value;
     });
     return Object.entries(regionMap).map(([name, value]) => ({ name, value }));
@@ -89,10 +89,10 @@ const SpendAnalytics: React.FC = () => {
     const quantity: number[] = Array(12).fill(0);
     const value: number[] = Array(12).fill(0);
     history.forEach((row) => {
-      const date = new Date(row.po_date);
+      const date = new Date(row.purchase_date);
       const monthIdx = date.getMonth();
       quantity[monthIdx] += Number(row.quantity || 0);
-      value[monthIdx] += Number(row.base_price_fc || 0);
+      value[monthIdx] += Number(row.total_cost || 0);
     });
     return { quantity, value };
   }, [history]);

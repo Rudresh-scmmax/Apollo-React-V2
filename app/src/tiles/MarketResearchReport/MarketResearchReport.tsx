@@ -15,10 +15,11 @@ import { RootState } from "../../store/store";
 import { useSelector } from "react-redux";
 import { message } from "antd";
 import EditableTakeawayTable from "./Table/TakeawaysTable";
+import MaterialSelect from "../../common/MaterialSelect";
 
 // type Material = {
 // 	material_description: string;
-// 	material_code: string;
+// 	material_id: string;
 //   };
 
 const MarketResearchReport: React.FC = () => {
@@ -29,10 +30,10 @@ const MarketResearchReport: React.FC = () => {
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
-  const { getReports, addMaterial, uploadPDF, checkPDFStatus, getMaterials } =
+  const { getTakeaways, addMaterial, uploadPDF, checkPDFStatus, getMaterials, deleteTakeaway } =
     useBusinessAPI();
   const [showAddOptions, setShowAddOptions] = useState(false);
-  const [newMaterialCode, setNewMaterialCode] = useState<string>("");
+  const [newmaterialId, setNewmaterialId] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
     getGlobalSetMaterial
@@ -56,11 +57,11 @@ const MarketResearchReport: React.FC = () => {
   });
 
   const uploadPDFMutation = useMutation({
-    mutationFn: (params: { file: File; material_code: string }) =>
-      uploadPDF(params.file, params.material_code),
+    mutationFn: (params: { file: File; material_id: string }) =>
+      uploadPDF(params.file, params.material_id),
     onSuccess: (response) => {
       setSelectedFile(null);
-      setNewMaterialCode("");
+      setNewmaterialId("");
 
       if (response?.id) {
         setProcessingPdfIds((prev: any) => [
@@ -84,21 +85,37 @@ const MarketResearchReport: React.FC = () => {
     refetch,
   } = useQuery<ReportData[]>({
     queryKey: ["takeaways", selectedMaterial],
-    queryFn: () => getReports(selectedMaterial?.material_code),
+    queryFn: () => getTakeaways(selectedMaterial?.material_id),
   });
 
   const addMaterialMutation = useMutation({
     mutationFn: addMaterial,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["materials"] });
-      setNewMaterialCode("");
+      setNewmaterialId("");
       setShowAddOptions(false);
     },
   });
 
+  const deleteTakeawayMutation = useMutation({
+    mutationFn: (id: number) => deleteTakeaway(id),
+    onSuccess: () => {
+      message.success("Takeaway deleted successfully");
+      queryClient.invalidateQueries({ queryKey: ["takeaways", selectedMaterial] });
+    },
+    onError: (error: any) => {
+      message.error(error.message || "Failed to delete takeaway");
+    }
+  });
+
+  const handleDeleteTakeaway = (id: number) => {
+    deleteTakeawayMutation.mutate(id);
+  };
+
+
   const handleAddMaterial = () => {
-    if (newMaterialCode?.trim()) {
-      addMaterialMutation.mutate(newMaterialCode);
+    if (newmaterialId?.trim()) {
+      addMaterialMutation.mutate(newmaterialId);
     }
   };
 
@@ -109,10 +126,10 @@ const MarketResearchReport: React.FC = () => {
   };
 
   const handleUploadPDF = () => {
-    if (selectedFile && newMaterialCode) {
+    if (selectedFile && newmaterialId) {
       uploadPDFMutation.mutate({
         file: selectedFile,
-        material_code: newMaterialCode,
+        material_id: newmaterialId,
       });
     } else {
       message.error("material or file should not be empty");
@@ -155,12 +172,12 @@ const MarketResearchReport: React.FC = () => {
   }, []);
 
   /*if (isPending) {
-		return (
-			<div className="flex items-center justify-center min-h-screen">
-				<div className="text-gray-600 text-lg font-semibold">Loading...</div>
-			</div>
-		);
-	}*/
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-600 text-lg font-semibold">Loading...</div>
+      </div>
+    );
+  }*/
 
   console.log(marketData);
 
@@ -173,28 +190,15 @@ const MarketResearchReport: React.FC = () => {
             {selectedMaterial?.material_description || "All Material"}
           </h1>
           <div className="flex gap-4">
-            <select
-              className="border border-gray-300 rounded-lg px-4 py-2 bg-white max-w-[250px] truncate"
-              value={selectedMaterial?.material_code || ""}
-              onChange={(e) => {
-                const selected = materials?.find(
-                  (material) => material.material_code === e.target.value
-                );
-                setSelectedMaterial(selected ?? null);
+
+            <MaterialSelect
+              materials={materials || []}
+              selectedMaterial={selectedMaterial}
+              onSelect={(selected) => {
+                setSelectedMaterial(selected);
               }}
-            >
-              <option value="">Select Material</option>
-              {materials?.map((material, index) => (
-                <option
-                  key={index}
-                  value={material?.material_code}
-                  title={material?.material_description} // Show full on hover
-                >
-                  {material?.material_description?.slice(0, 50)}
-                  {/* Optional manual trim */}
-                </option>
-              ))}
-            </select>
+            />
+
             <div className="relative" ref={dropdownRef}>
               <button
                 className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -212,24 +216,22 @@ const MarketResearchReport: React.FC = () => {
                         Add New Material
                       </h3>
                       <div className="flex gap-2">
-                        <select
-                          className="border border-gray-300 rounded px-3 py-1 flex-grow cursor-pointer"
-                          value={newMaterialCode}
-                          onChange={(e) => setNewMaterialCode(e.target.value)}
-                        >
-                          <option value="">Select Material*</option>
-                          {materials?.map((material, index) => (
-                            <option key={index} value={material?.material_code}>
-                              {material?.material_description}
-                            </option>
-                          ))}
-                        </select>
+                        <MaterialSelect
+                          materials={materials || []}
+                          selectedMaterial={selectedMaterial}
+                          onSelect={(selected) => {
+                            setSelectedMaterial(selected);
+                            if (selected) {
+                              setNewmaterialId(selected.material_id);
+                            }
+                          }}
+                        />
                         {/* <input
 													type="text"
 													className="border border-gray-300 rounded px-3 py-1 flex-grow"
 													placeholder="Material name"
-													value={newMaterialCode}
-													onChange={(e) => setNewMaterialCode(e.target.value)}
+													value={newmaterialId}
+													onChange={(e) => setNewmaterialId(e.target.value)}
 												/> */}
                         <button
                           onClick={handleAddMaterial}
@@ -328,7 +330,11 @@ const MarketResearchReport: React.FC = () => {
       </div>
 
       <div className="overflow-x-auto">
-        <EditableTakeawayTable marketData={marketData ?? []} />
+        <EditableTakeawayTable
+          marketData={marketData ?? []}
+          onDelete={handleDeleteTakeaway}
+        />
+
       </div>
     </div>
   );

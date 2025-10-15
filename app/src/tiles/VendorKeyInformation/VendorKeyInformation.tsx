@@ -115,10 +115,10 @@ const VendorKeyInformation: React.FC<any> = () => {
   }, [selectedMaterial, navigate]);
 
   const { data: vendorInfo, isLoading } = useQuery({
-    queryKey: ["vendorKeyInformation", selectedMaterial?.material_code],
+    queryKey: ["vendorKeyInformation", selectedMaterial?.material_id],
     queryFn: () =>
-      getVendorKeyInformation(selectedMaterial?.material_code || ""),
-    enabled: !!selectedMaterial?.material_code,
+      getVendorKeyInformation(selectedMaterial?.material_id || ""),
+    enabled: !!selectedMaterial?.material_id,
   });
 
   useEffect(() => {
@@ -140,7 +140,7 @@ const VendorKeyInformation: React.FC<any> = () => {
     try {
       // Prepare the data for the API call
       const updateData = {
-        material_code: selectedMaterial?.material_code,
+        material_id: selectedMaterial?.material_id,
         supplier_name: updatedRecord.supplier_name,
         supplier_site: updatedRecord.supplier_site,
         capacity_mn_tons: updatedRecord.capacity_mn_tons,

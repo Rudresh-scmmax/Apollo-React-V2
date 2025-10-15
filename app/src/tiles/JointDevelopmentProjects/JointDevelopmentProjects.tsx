@@ -38,9 +38,9 @@ const JointDevelopmentProjects: React.FC<any> = () => {
   }, [selectedMaterial, navigate]);
 
   const { data: projectData, isLoading } = useQuery({
-    queryKey: ["jointDevelopmentProjects", selectedMaterial?.material_code],
-    queryFn: () => getJointDevelopmentProjects(selectedMaterial?.material_code || ""),
-    enabled: !!selectedMaterial?.material_code,
+    queryKey: ["jointDevelopmentProjects", selectedMaterial?.material_id],
+    queryFn: () => getJointDevelopmentProjects(selectedMaterial?.material_id || ""),
+    enabled: !!selectedMaterial?.material_id,
   });
 
   const handleViewMom = (text: string) => {

@@ -30,13 +30,13 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
 
   const { data: materialPriceHistory } = useQuery({
     queryKey: ["materialPrices", selectedMaterial, region],
-    queryFn: () => getMaterialPrices(selectedMaterial?.material_code, region),
+    queryFn: () => getMaterialPrices(selectedMaterial?.material_id, region),
     enabled: !!selectedMaterial && !!region,
   });
 
   const { data: recomendations } = useQuery<StrategyRecommendation>({
     queryKey: ["recomendations", selectedMaterial, region],
-    queryFn: () => getRecomendations(selectedMaterial?.material_code, region),
+    queryFn: () => getRecomendations(selectedMaterial?.material_id, region),
     enabled: !!selectedMaterial && !!region,
   });
   // Sort data by date to ensure correct ordering

@@ -46,6 +46,7 @@ import { setGlobalSelectedMaterial } from "../../store/materialSlice";
 import ProcurementNews from "./ProcurementNews";
 import PriceChartWithNews from "./PriceChart";
 import VendorWiseActionPlanList from "./VendorWiseActionPlanList";
+import MaterialSelect from "../../common/MaterialSelect";
 
 interface TileProps {
   icon: React.ReactNode;
@@ -128,8 +129,9 @@ const DashboardPage: React.FC = () => {
     checkPDFStatus,
   } = useBusinessAPI();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
-    getGlobalSetMaterial || {material_description: "Glycerine", material_code: "M0003"}
+    getGlobalSetMaterial || { material_description: "Glycerine", material_id: "M0003" }
   );
+  console.log("selectedMaterial", selectedMaterial)
   const [showAddOptions, setShowAddOptions] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -350,27 +352,45 @@ const DashboardPage: React.FC = () => {
 
           {/* Material Selector */}
           <div className="flex gap-4">
-            <select
-              className="border border-gray-300 rounded-lg px-4 py-2 bg-white"
-              value={selectedMaterial?.material_code || ""}
-              onChange={(e) => {
-                const selected = materials?.find(
-                  (material) => material.material_code === e.target.value
-                );
-                setSelectedMaterial(selected ?? null);
+            {/* <MaterialSelect
+              materials={
+                (materials || []).map((m) => ({
+                  material_id: m.material_id ?? "",
+                  material_description: m.material_description,
+                }))
+              }
+              selectedMaterial={
+                selectedMaterial
+                  ? {
+                      material_id: selectedMaterial.material_id ?? "",
+                      material_description: selectedMaterial.material_description,
+                    }
+                  : null
+              }
+              onSelect={(selected) => {
                 if (selected) {
-                  dispatch(setGlobalSelectedMaterial(selected));
-                  // localStorage.setItem("selectedMaterial", JSON.stringify(selected));
+                  dispatch(
+                    setGlobalSelectedMaterial({
+                      material_description: selected.material_description,
+                      material_id: selected.material_id,
+                    })
+                  );
                 }
               }}
-            >
-              <option value="">Select Material</option>
-              {materials?.map((material, index) => (
-                <option key={index} value={material?.material_code}>
-                  {material?.material_description}
-                </option>
-              ))}
-            </select>
+            /> */}
+
+            <MaterialSelect
+              materials={materials || []}
+              selectedMaterial={selectedMaterial}
+              onSelect={(selected) => {
+                setSelectedMaterial(selected);
+                if (selected) {
+                  dispatch(setGlobalSelectedMaterial(selected));
+                }
+              }}
+            />
+
+
           </div>
         </div>
 
@@ -424,9 +444,9 @@ const DashboardPage: React.FC = () => {
           className="grid gap-6"
           style={{ gridTemplateColumns: "30% 40% 30%" }}
         >
-          <ProcurementNews materialCode={selectedMaterial?.material_code || ""} region="Asia-Pacific" />
-          <PriceChartWithNews materialCode={selectedMaterial?.material_code || ""} region="Asia-Pacific" />
-          <VendorWiseActionPlanList materialCode={selectedMaterial?.material_code || ""} region="Asia-Pacific" />
+          <ProcurementNews materialId={selectedMaterial?.material_id || ""} region="Asia-Pacific" />
+          <PriceChartWithNews materialId={selectedMaterial?.material_id || ""} region="Asia-Pacific" />
+          <VendorWiseActionPlanList materialId={selectedMaterial?.material_id || ""} region="Asia-Pacific" />
         </div>
 
 

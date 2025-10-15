@@ -14,17 +14,17 @@ interface DataPoint {
 }
 
 interface PriceChartWithNewsProps {
-  materialCode: string;
+  materialId: string;
   region: string;
 }
 
-const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialCode, region }) => {
+const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, region }) => {
   const { getMaterialPrices } = useBusinessAPI();
 
   const { data: materialPriceHistory, isLoading } = useQuery({
-    queryKey: ["materialPrices", materialCode, region],
-    queryFn: () => getMaterialPrices(materialCode, region),
-    enabled: !!materialCode && !!region,
+    queryKey: ["materialPrices", materialId, region],
+    queryFn: () => getMaterialPrices(materialId, region),
+    enabled: !!materialId && !!region,
   });
 
   const currentDate = new Date();

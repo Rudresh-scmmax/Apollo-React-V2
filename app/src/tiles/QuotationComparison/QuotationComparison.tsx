@@ -27,7 +27,7 @@ const QuotationComparison: React.FC = () => {
       message.warning("Please select at least one PDF file to upload.");
       return;
     }
-    if (!selectedMaterial?.material_code) {
+    if (!selectedMaterial?.material_id) {
       message.warning("No material selected. Please select a material first.");
       return;
     }
@@ -41,7 +41,7 @@ const QuotationComparison: React.FC = () => {
         const file = fileObj.originFileObj || fileObj;
         formData.append("files", file);
       });
-      formData.append("materialCode", selectedMaterial.material_code);
+      formData.append("materialId", selectedMaterial.material_id);
 
       const res = await uploadQuotationPDF(formData);
 
@@ -221,7 +221,7 @@ const QuotationComparison: React.FC = () => {
               <div>
                 <div style={{ fontWeight: 600, marginBottom: 16 }}>Quote Details</div>
                 <div style={{ marginBottom: 8 }}>
-                  <b>Raw Material:</b> {summaryData.raw_material || summaryData.material_code || "-"}
+                  <b>Raw Material:</b> {summaryData.raw_material || summaryData.material_id || "-"}
                 </div>
                 <div style={{ marginBottom: 8 }}>
                   <b>Vendor Name:</b> {summaryData.vendor_name || "-"}

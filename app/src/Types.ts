@@ -28,7 +28,7 @@ interface DailyUpdate {
 
 
 interface ProcurementPlanData {
-  material_code: string;
+  material_id: string;
   material_description: string;
   plant_code: string;
   safety_stock: string;
@@ -47,7 +47,7 @@ interface PriceHistoryTrendResponse {
 }
 
 type ShutdownTrackingUpdateInput = {
-  material_code: string;
+  material_id: string;
   region: string;
   date: string; // in YYYY-MM-DD format
   shutdown_from?: string; // optional ISO datetime or date string

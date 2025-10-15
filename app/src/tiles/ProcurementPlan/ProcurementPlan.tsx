@@ -24,9 +24,9 @@ const ProcurementPlanTable: React.FC = () => {
   );
 
   const { data: procurementData, isLoading } = useQuery<ProcurementPlanResponse>({
-    queryKey: ["procurementPlan", selectedPlantCode, selectedMaterial?.material_code,],
-    queryFn: () => getProcurementPlan(selectedPlantCode, selectedMaterial?.material_code,),
-    enabled: !!selectedPlantCode && !!selectedMaterial?.material_code,
+    queryKey: ["procurementPlan", selectedPlantCode, selectedMaterial?.material_id,],
+    queryFn: () => getProcurementPlan(selectedPlantCode, selectedMaterial?.material_id,),
+    enabled: !!selectedPlantCode && !!selectedMaterial?.material_id,
   });
 
   const { data: plantCodes } = useQuery<string[]>({

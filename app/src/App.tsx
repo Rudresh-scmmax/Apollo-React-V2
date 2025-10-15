@@ -38,7 +38,7 @@ import ProcurementPlanTable from "./tiles/ProcurementPlan/ProcurementPlan";
 import MinutesOfMeeting from "./tiles/MinutesOfMeeting/MinutesOfMeeting";
 import JointDevelopmentProjects from "./tiles/JointDevelopmentProjects/JointDevelopmentProjects";
 import MultiplePointEngagement from "./tiles/MultiplePointEngagement/MultiplePointEngagement";
-import CostSheet from "./tiles/CostSheet/CostSheet";
+// import CostSheet from "./tiles/CostSheet/CostSheet";
 import MaterialSheet from "./tiles/CostSheet/MaterialSheet";
 import KeyValueDrivers from "./tiles/KeyValueDrivers/KeyValueDrivers";
 import SpendAnalytics from "./tiles/SpendAnalytics/SpendAnalytics";
@@ -52,6 +52,7 @@ import PriceBenchmarking from "./tiles/PriceBenchmarking/PriceBenchmarking";
 import IndustryPorterAnalysis from "./tiles/IndustryPorterAnalysis/IndustryPorterAnalysis";
 import SeasonalityTrends from "./tiles/SeasonalityTrends/SeasonalityTrends";
 import NegotiationObjectives from "./tiles/NegotiationObjectives/NegotiationObjectives";
+import UserPreferencesPage from "./components/UserPreference";
 
 
 
@@ -102,20 +103,20 @@ const AppRoutes: React.FC = () => {
         <Route path="/minutes-of-meeting" element={<MinutesOfMeeting />} />
         <Route path="/joint-development-projects" element={<JointDevelopmentProjects />} />
         <Route path="/multiple-point-engagements" element={<MultiplePointEngagement />} />
-        <Route path="/costsheet" element={<CostSheet/>} />
-        <Route path="/material/:materialName" element={<MaterialSheet />} />
+        <Route path="/costsheet" element={<MaterialSheet />} />
         <Route path="/key-value-drivers" element={<KeyValueDrivers />} />
-        <Route path="/spend-analytics" element={<SpendAnalytics/>} />
+        <Route path="/spend-analytics" element={<SpendAnalytics />} />
         <Route path="/inventory-levels" element={<InventoryLevel />} />
         <Route path="/vendor-wise-action-plan" element={<VendorWiseActionPlan />} />
         <Route path="/vendor-key-info" element={<VendorKeyInformation />} />
         <Route path="/fact-pack" element={<FactPack />} />
         <Route path="/quotation-comparison" element={<QuotationComparison />} />
-        <Route path="/trade-data-analysis" element={<TradeDataAnalysis/>} />
+        <Route path="/trade-data-analysis" element={<TradeDataAnalysis />} />
         <Route path="/price-benchmarking" element={<PriceBenchmarking />} />
         <Route path="/industry-porter-analysis" element={<IndustryPorterAnalysis />} />
         <Route path="/seasonality-trends" element={<SeasonalityTrends />} />
         <Route path="/negotiation-objectives" element={<NegotiationObjectives />} />
+        <Route path="/preferences" element={<UserPreferencesPage />} />
       </Route>
 
       {/* TEMPORARY FOR DEMO */}

@@ -38,9 +38,9 @@ const MinutesOfMeeting: React.FC<any> = () => {
   }, [selectedMaterial, navigate]);
 
   const { data: momData, isLoading } = useQuery({
-    queryKey: ["minutesOfMeeting", selectedMaterial?.material_code],
-    queryFn: () => getMinutesOfMeeting(selectedMaterial?.material_code || ""),
-    enabled: !!selectedMaterial?.material_code,
+    queryKey: ["minutesOfMeeting", selectedMaterial?.material_id],
+    queryFn: () => getMinutesOfMeeting(selectedMaterial?.material_id || ""),
+    enabled: !!selectedMaterial?.material_id,
   });
 
   const handleViewMom = (text: string) => {

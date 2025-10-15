@@ -9,20 +9,20 @@ import { Link } from "react-router-dom";
 const { Title, Text } = Typography;
 
 interface VendorWiseActionPlanProps {
-  materialCode: string;
+  materialId: string;
   region: string;
 }
 
-const VendorWiseActionPlanList: React.FC<VendorWiseActionPlanProps> = ({ materialCode, region }) => {
+const VendorWiseActionPlanList: React.FC<VendorWiseActionPlanProps> = ({ materialId, region }) => {
   const { getVendorWiseActionPlan } = useBusinessAPI();
   const selectedMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
   const { data: plansData, isLoading } = useQuery({
-    queryKey: ["vendorPlans", materialCode],
-    queryFn: () => getVendorWiseActionPlan(materialCode),
-    enabled: !!materialCode
+    queryKey: ["vendorPlans", materialId],
+    queryFn: () => getVendorWiseActionPlan(materialId),
+    enabled: !!materialId
   });
 
 
@@ -42,7 +42,7 @@ const VendorWiseActionPlanList: React.FC<VendorWiseActionPlanProps> = ({ materia
         <div style={{ display: "flex", justifyContent: "center", paddingTop: 40 }}>
           <Spin tip="Loading action plans..." />
         </div>
-      ) : plansData.length > 0 ? (
+      ) : plansData?.length > 0 ? (
         <div className="flex flex-col gap-3">
           {plansData.map((plan: any) => (
             <Link

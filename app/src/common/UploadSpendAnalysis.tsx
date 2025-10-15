@@ -11,26 +11,19 @@ interface UploadSpendAnalysisProps {
 
 const exampleData = [
   {
-    plant_code: "Mundra",
+    plant_code: "1001",
     po_number: "21135661",
     po_date: "2023-01-02",
-    buyer_name: "Sukumar, Mr. Shetty",
     supplier_id: "12813",
-    supplier_name: "BASF India Ltd",
-    supplier_site: "MUMBAI-194Q",
     material_code: "M025",
-    item_description: "2-Ethylhexanoic Acid",
     quantity: "59200.0000",
     uom: "KILOGRAMS",
     currency: "INR",
-    exchange_rate: "1.0000",
     price: "160.0000",
     payment_term: "60 Days Credit from Invoice Date",
-    base_price_fc: "9472000.0000",
     freight_terms_dsp: "To Sellers A/c",
-    ship_via_lookup_code: "Sea",
-    fob_dsp: "CIF-Mundra",
-    row_hash: "3bfbcf85a47eb58ad259476aae51211d4ea876b148bf783887ca81e801065c43",
+    purchasing_org_id: "1",
+    transaction_posting_date: "2023-01-15",
   },
 ];
 

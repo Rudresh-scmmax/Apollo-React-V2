@@ -35,9 +35,9 @@ const SeasonalityTrends: React.FC = () => {
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
   const { data: regions } = useQuery<string[]>({
-    queryKey: ["regions", selectedMaterial?.material_code],
-    queryFn: () => getRegions(selectedMaterial?.material_code || ""),
-    enabled: !!selectedMaterial?.material_code,
+    queryKey: ["regions", selectedMaterial?.material_id],
+    queryFn: () => getRegions(selectedMaterial?.material_id || ""),
+    enabled: !!selectedMaterial?.material_id,
   });
 
   type SeasonalityData = {
@@ -53,15 +53,15 @@ const SeasonalityTrends: React.FC = () => {
   } = useQuery({
     queryKey: [
       "seasonality-trends",
-      selectedMaterial?.material_code,
+      selectedMaterial?.material_id,
       selectedRegion,
     ],
     queryFn: () =>
       getSeasonalityTrends(
-        selectedMaterial?.material_code!,
+        selectedMaterial?.material_id!,
         selectedRegion
       ),
-    enabled: !!selectedMaterial?.material_code && !!selectedRegion,
+    enabled: !!selectedMaterial?.material_id && !!selectedRegion,
   });
 
   const seasonalityData: SeasonalityData = (seasonalityDataRaw && typeof seasonalityDataRaw === 'object' && 'months' in seasonalityDataRaw && 'years' in seasonalityDataRaw && 'regions' in seasonalityDataRaw)
