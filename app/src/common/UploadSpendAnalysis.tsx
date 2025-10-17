@@ -15,7 +15,7 @@ const exampleData = [
     po_number: "21135661",
     po_date: "2023-01-02",
     supplier_id: "12813",
-    material_code: "M025",
+    material_id: "M025",
     quantity: "59200.0000",
     uom: "KILOGRAMS",
     currency: "INR",

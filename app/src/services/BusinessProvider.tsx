@@ -98,7 +98,7 @@ interface BusinessContextType {
   getInventoryLevels: (materalId: string) => Promise<any>;
   getVendorWiseActionPlan: (materalId: string) => Promise<any>;
   getVendorKeyInformation: (materalId: string) => Promise<any>;
-  getMaterialSubtituteData: (materalId: string, plant_code: string, region?: string) => Promise<any>;
+  getMaterialSubtituteData: (materalId: string, plant_id: string, location_id?: string) => Promise<any>;
   getFactPackData: (materalId: string) => Promise<any>;
   uploadFactPackFile: (file: File, material_id: string) => Promise<any>;
   processQuotations: (files: string[]) => Promise<any>;
@@ -854,12 +854,12 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getMaterialSubtituteData = async (
-    materalId: string, plant_code: string, region?: string
+    materalId: string, plant_id: string, location_id?: string
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
     queryParams.append("material_id", materalId);
-    queryParams.append("plant_code", plant_code);
-    if (region) queryParams.append("region", region);
+    queryParams.append("plant_id", plant_id);
+    if (location_id) queryParams.append("location_id", location_id);
 
     return fetchWrapper(
       `${businessApiUrl}/material-substitutes?${queryParams.toString()}`,

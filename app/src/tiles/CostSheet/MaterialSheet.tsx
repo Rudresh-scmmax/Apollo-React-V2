@@ -36,6 +36,8 @@ const MaterialSheetAntd = () => {
   const [showSpendAnalysis, setShowSpendAnalysis] = useState(false);
   const [showMaterialPriceHistory, setShowMaterialPriceHistory] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedRegionId, setSelectedRegionId] = useState<number | null>(null);
+  const [selectedPlantId, setSelectedPlantId] = useState<number | null>(null);
 
   const { data: plantCodes } = useQuery<{plant_id: number, plant_name: string}[]>({
     queryKey: ["plantCodes", selectedMaterial?.material_id],
@@ -49,6 +51,7 @@ const MaterialSheetAntd = () => {
   useEffect(() => {
     if (plantCodes && plantCodes.length > 0 && !selectedPlantCode) {
       setSelectedPlantCode(plantCodes[0].plant_name);
+      setSelectedPlantId(plantCodes[0].plant_id);
     }
   }, [plantCodes, selectedPlantCode]);
 
@@ -56,16 +59,16 @@ const MaterialSheetAntd = () => {
     queryKey: [
       "materialSubtituteData",
       selectedMaterial?.material_id,
-      selectedRegion,
-      selectedPlantCode,
+      selectedRegionId,
+      selectedPlantId,
     ],
     queryFn: () =>
       getMaterialSubtituteData(
         selectedMaterial?.material_id || "",
-        selectedPlantCode,
-        selectedRegion
+        selectedPlantId?.toString() || "",
+        selectedRegionId?.toString() || ""
       ),
-    enabled: !!selectedMaterial && !!selectedPlantCode && !!selectedRegion,
+    enabled: !!selectedMaterial && selectedPlantId !== null && selectedRegionId !== null,
   });
 
   const { data: regions } = useQuery<{location_id: number, location_name: string}[]>({
@@ -74,6 +77,14 @@ const MaterialSheetAntd = () => {
       getRegions(selectedMaterial?.material_id || ""),
     enabled: !!selectedMaterial?.material_id,
   });
+
+  // Update selectedRegionId when regions change
+  useEffect(() => {
+    if (regions && regions.length > 0 && !selectedRegion) {
+      setSelectedRegion(regions[0].location_name);
+      setSelectedRegionId(regions[0].location_id);
+    }
+  }, [regions, selectedRegion]);
 
   // Convert API data and destructure molecularWeights
   const { apiData, months, mainMaterialPriceHistory, subtractMaterialMeta, molecularWeights } = useMemo(() => {
@@ -729,12 +740,24 @@ const MaterialSheetAntd = () => {
             <RegionSelector
               regions={regions?.map(region => region.location_name) || []}
               selectedRegion={selectedRegion}
-              setSelectedRegion={setSelectedRegion}
+              setSelectedRegion={(regionName: string) => {
+                setSelectedRegion(regionName);
+                const region = regions?.find(r => r.location_name === regionName);
+                if (region) {
+                  setSelectedRegionId(region.location_id);
+                }
+              }}
             />
             <PlantSelector
               plantCodes={plantCodes?.map(plant => plant.plant_name) || []}
               selectedPlantCode={selectedPlantCode}
-              setSelectedPlantCode={setSelectedPlantCode}
+              setSelectedPlantCode={(plantName: string) => {
+                setSelectedPlantCode(plantName);
+                const plant = plantCodes?.find(p => p.plant_name === plantName);
+                if (plant) {
+                  setSelectedPlantId(plant.plant_id);
+                }
+              }}
             />
           </div>
         </div>

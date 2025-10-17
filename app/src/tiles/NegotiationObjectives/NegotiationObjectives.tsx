@@ -1,160 +1,333 @@
 import React, { useEffect, useState } from "react";
-import { Select, DatePicker, Input, Button, message, Card, Table } from "antd";
-import dayjs from "dayjs";
+import { useSelector } from "react-redux";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+
+import { RootState } from "../../store/store";
 import { useBusinessAPI } from "../../services/BusinessProvider";
-import { useQuery } from "@tanstack/react-query";
 
-const { Option } = Select;
-const { TextArea } = Input;
+import NegotiationHeader from "./NegotiationHeader";
+import VendorDateSelector from "./VendorDateSelector";
+import ObjectiveCard from "./ObjectiveCard";
+import TcoTable from "./TcoTable";
+import CleanSheetPriceTable from "./CleanSheetPriceTable";
+import ImportExportTable from "./ImportExportTable";
+import TargetNegotiationTable from "./TargetNegotiationTable";
+import WishlistConcession from "./WishlistConcession";
+import StrategyTable from "./StrategyTable";
+import MarketUpdateTable from "./MarketUpdateTable";
+import SaveButton from "./SaveButton";
+import { Button, Card, message, Alert } from "antd";
 
-const EditableCell: React.FC<EditableCellProps> = ({
-  value,
-  onChange,
-  placeholder,
-  style,
-  multiline = false,
-}) => {
-  if (multiline) {
-    return (
-      <TextArea
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        style={{ border: "none", background: "transparent", ...style }}
-        autoSize={{ minRows: 2, maxRows: 4 }}
-      />
-    );
-  }
+interface SelectedMaterial {
+  material_id: string;
+  material_description: string;
+}
 
-  return (
-    <Input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      style={{ border: "none", background: "transparent", ...style }}
-    />
-  );
+type NegotiationData = {
+  objective: string;
+  tco: Array<{
+    materialName: string;
+    pastPeriod: string;
+    current: string;
+    forecast: string;
+  }>;
+  cleanSheetPrice: {
+    routeA: { pastPeriod: string; current: string; forecast: string };
+    routeB: { pastPeriod: string; current: string; forecast: string };
+  };
+  importExportData: {
+    import: { pastPeriod: string; current: string; forecast: string };
+    export: { pastPeriod: string; current: string; forecast: string };
+  };
+  targetNegotiation: {
+    min_value: number;
+    max_value: number;
+    min_source: string;
+    max_source: string;
+  };
+  wishlists: {
+    wishlist: {
+      paymentTerms: { levers: string; remarks: string };
+      security: { levers: string; remarks: string };
+    };
+    concession: {
+      paymentTerms: { levers: string; remarks: string };
+      security: { levers: string; remarks: string };
+    };
+  };
+  strategy: {
+    supplierSOB: string;
+    whatWeWantToAvoid: string;
+    whatTheyWantToAvoid: string;
+  };
+  marketUpdate: {
+    myInfo: string;
+    questionsToAsk: string;
+  };
 };
 
-const NegotiationObjectives: React.FC<any> = () => {
-  const { getVendors, getNegotiationObjectives, createNegotiationObjectives } =
-    useBusinessAPI();
-
-  const [loading, setLoading] = useState(false);
-
-  const { data: vendorsData = [], isLoading } = useQuery({
-    queryKey: ["vendorsData"],
-    queryFn: getVendors,
-  });
-
-  const [date, setDate] = useState<string | null>(null);
-  const [vendor, setVendor] = useState<string>(vendorsData[0] || "");
-
-  const initialNegotiationData = {
-    // vendor: "",
-    // date: "",
-    objective: "",
-    tco: {
+const initialNegotiationData: NegotiationData = {
+  objective: "",
+  tco: [
+    {
+      materialName: "",
       pastPeriod: "",
       current: "",
       forecast: "",
     },
-    cleanSheetPrice: {
-      routeA: {
-        pastPeriod: "",
-        current: "",
-        forecast: "",
-      },
-      routeB: {
-        pastPeriod: "",
-        current: "",
-        forecast: "",
-      },
+  ],
+  cleanSheetPrice: {
+    routeA: { pastPeriod: "", current: "", forecast: "" },
+    routeB: { pastPeriod: "", current: "", forecast: "" },
+  },
+  importExportData: {
+    import: { pastPeriod: "", current: "", forecast: "" },
+    export: { pastPeriod: "", current: "", forecast: "" },
+  },
+  targetNegotiation: {
+    min_value: 0,
+    max_value: 0,
+    min_source: "",
+    max_source: "",
+  },
+  wishlists: {
+    wishlist: {
+      paymentTerms: { levers: "", remarks: "" },
+      security: { levers: "", remarks: "" },
     },
-    importExportData: {
-      import: {
-        pastPeriod: "",
-        current: "",
-        forecast: "",
-      },
-      export: {
-        pastPeriod: "",
-        current: "",
-        forecast: "",
-      },
+    concession: {
+      paymentTerms: { levers: "", remarks: "" },
+      security: { levers: "", remarks: "" },
     },
-    targetNegotiation: {
-      min: "",
-      max: "",
-    },
-    wishlists: {
-      wishlist: {
-        paymentTerms: { levers: "", remarks: "" },
-        security: { levers: "", remarks: "" },
-      },
-      concession: {
-        paymentTerms: { levers: "", remarks: "" },
-        security: { levers: "", remarks: "" },
-      },
-    },
-    strategy: {
-      supplierSOB: "",
-      whatWeWant: "",
-      whatTheyWant: "",
-      whatWeWantToAvoid: "",
-      whatTheyWantToAvoid: "",
-    },
-    marketUpdate: {
-      myInfo: "",
-      questionsToAsk: "",
-    },
-  };
+  },
+  strategy: {
+    supplierSOB: "",
+    whatWeWantToAvoid: "",
+    whatTheyWantToAvoid: "",
+  },
+  marketUpdate: {
+    myInfo: "",
+    questionsToAsk: "",
+  },
+};
+
+const NegotiationObjectives: React.FC = () => {
+  const { 
+    getVendors, 
+    getNegotiationObjectives, 
+    createNegotiationObjectives, 
+    getMaterials, 
+    getTargetNegotiation, 
+    getTcoPrices, 
+    getShouldBePrice, 
+    getExportPrice, 
+    getImportPrice, 
+    refreshRecommendation, 
+    negotiationRecommendations 
+  } = useBusinessAPI();
+
+  const queryClient = useQueryClient();
+
+  const [loading, setLoading] = useState(false);
+
+  const getGlobalSetMaterial = useSelector((state: RootState) => state.material.globalSelectedMaterial);
+  const [selectedMaterial, setSelectedMaterial] = useState<SelectedMaterial | null>(getGlobalSetMaterial);
+  const [loadingRecommendations, setLoadingRecommendations] = useState(false);
+  const [recommendationStatus, setRecommendationStatus] = useState<string | null>(null);
+
+  const [date, setDate] = useState<string | null>(null);
+  const [vendor, setVendor] = useState<string>("");
+
+  const { data: materials, isLoading: isLoadingMaterials } = useQuery<SelectedMaterial[]>({
+    queryKey: ["materials"],
+    queryFn: getMaterials,
+  });
+
+  const { data: vendorsData = [] } = useQuery<string[]>({
+    queryKey: ["vendorsData", selectedMaterial?.material_id || ""],
+    queryFn: () => getVendors(selectedMaterial?.material_id || ""),
+    enabled: !!selectedMaterial?.material_id,
+  });
+
+  const { data: targetNegotiation } = useQuery<{ min_value: number; max_value: number, min_source: string, max_source: string }>({
+    queryKey: ["targetNegotiation", selectedMaterial?.material_id, date, vendor],
+    queryFn: () => getTargetNegotiation(selectedMaterial?.material_id || "", date || "", vendor || ""),
+    enabled: !!selectedMaterial?.material_id && !!date && !!vendor,
+  });
+
+  const { data: shouldBePrice } = useQuery<{
+    current: number;
+    forecast: number;
+    pastPeriod: number;
+  }>({
+    queryKey: ["shouldBePrice", selectedMaterial?.material_id, date],
+    queryFn: () => getShouldBePrice(selectedMaterial?.material_id || "", date || ""),
+    enabled: !!selectedMaterial?.material_id && !!date,
+  });
+
+  const { data: exportPrice } = useQuery<{
+    current: number;
+    forecast: number;
+    pastPeriod: number;
+  }>({
+    queryKey: ["exportPrice", selectedMaterial?.material_id, date],
+    queryFn: () => getExportPrice(selectedMaterial?.material_id || "", date || ""),
+    enabled: !!selectedMaterial?.material_id && !!date,
+  });
+
+  const { data: importPrice } = useQuery<{
+    current: number;
+    forecast: number;
+    pastPeriod: number;
+  }>({
+    queryKey: ["importPrice", selectedMaterial?.material_id, date],
+    queryFn: () => getImportPrice(selectedMaterial?.material_id || "", date || ""),
+    enabled: !!selectedMaterial?.material_id && !!date,
+  });
+
+  const { data: negotiationObjectives, isLoading: isLoadingObjectives } = useQuery({
+    queryKey: ["negotiationObjectives", vendor || "", date || ""],
+    queryFn: () => getNegotiationObjectives(vendor || "", date || ""),
+    enabled: !!vendor && !!date,
+  });
+
+  const { data: negotiationRecommendationsData, isLoading: isLoadingRecommendations } = useQuery({
+    queryKey: ["negotiationRecommendations", vendor || "", date || ""],
+    queryFn: () => negotiationRecommendations(vendor || "", date || "", selectedMaterial?.material_id || ""),
+    enabled: !!vendor && !!date && !!selectedMaterial?.material_id,
+  });
+
+  console.log("negotiationRecommendationsData: ", negotiationRecommendationsData);
+
+  const { data: tcoPrices } = useQuery({
+    queryKey: ["tcoPrices", vendor || "", date || ""],
+    queryFn: () => getTcoPrices(vendor || "", date || ""),
+    enabled: !!vendor && !!date,
+  });
+
+  console.log("tcoPrices: ", tcoPrices);
 
   const [data, setData] = useState<NegotiationData>(initialNegotiationData);
 
-  const { data: negotiationObjectives } =
-    useQuery<NegotiationObjectivesResponse>({
-      queryKey: ["vendorsData", vendor || "", date || ""],
-      queryFn: () => getNegotiationObjectives(vendor || "", date || ""),
-      enabled: !!vendor && !!date,
-    });
-
+  // Update state whenever API data arrives
   useEffect(() => {
-    if (negotiationObjectives) {
-      const { objectives } = negotiationObjectives;
-      setData({ ...objectives });
-    } else {
-      setData(initialNegotiationData);
+    setData((prev) => {
+      let updated = { ...prev };
+
+      // Negotiation objectives (objective, strategy, marketUpdate, wishlists)
+      if (negotiationObjectives?.objectives) {
+        updated = {
+          ...updated,
+          ...negotiationObjectives.objectives,
+        };
+      }
+
+      // Target Negotiation
+      if (targetNegotiation) {
+        updated.targetNegotiation = {
+          min_value: targetNegotiation?.min_value ?? 0,
+          max_value: targetNegotiation?.max_value ?? 0,
+          min_source: targetNegotiation?.min_source ?? "",
+          max_source: targetNegotiation?.max_source ?? "",
+        };
+      }
+
+      // Clean sheet price (routeA)
+      if (shouldBePrice) {
+        updated.cleanSheetPrice.routeA = {
+          pastPeriod: formatTo2DecimalString(shouldBePrice.pastPeriod),
+          current: formatTo2DecimalString(shouldBePrice.current),
+          forecast: "",
+        };
+      }
+
+      // Import/Export
+      if (importPrice) {
+        updated.importExportData.import = {
+          pastPeriod: formatTo2DecimalString(importPrice.pastPeriod),
+          current: formatTo2DecimalString(importPrice.current),
+          forecast: formatTo2DecimalString(importPrice.forecast),
+        };
+      }
+      if (exportPrice) {
+        updated.importExportData.export = {
+          pastPeriod: formatTo2DecimalString(exportPrice.pastPeriod),
+          current: formatTo2DecimalString(exportPrice.current),
+          forecast: formatTo2DecimalString(exportPrice.forecast),
+        };
+      }
+
+      // TCO prices
+      if (tcoPrices?.tco?.length) {
+        updated.tco = tcoPrices.tco.map((item: any) => ({
+          materialName: item.materialName,
+          pastPeriod: item.pastPeriod?.toString() || "",
+          current: item.current?.toString() || "",
+          forecast: item.forecast?.toString() || "",
+        }));
+      }
+
+      // ✅ FIX: Only update recommendations if they're complete (not in processing state)
+      if (negotiationRecommendationsData) {
+        // Check if response is in processing state
+        if (negotiationRecommendationsData.status === "processing") {
+          setRecommendationStatus(
+            negotiationRecommendationsData.message || 
+            "Recommendations are being generated. Please wait..."
+          );
+          // Don't update the data - just return current state
+          return updated;
+        }
+
+        // Clear processing status if we got actual data
+        setRecommendationStatus(null);
+
+        // Update strategy only if data exists
+        if (negotiationRecommendationsData.strategy) {
+          updated.strategy = {
+            ...updated.strategy,
+            whatWeWantToAvoid:
+              negotiationRecommendationsData.strategy.whatWeWantToAvoid || "",
+            whatTheyWantToAvoid:
+              negotiationRecommendationsData.strategy.whatTheyWantToAvoid || "",
+          };
+        }
+
+        // Update market update only if data exists
+        if (negotiationRecommendationsData.marketUpdate) {
+          updated.marketUpdate = {
+            ...updated.marketUpdate,
+            questionsToAsk:
+              negotiationRecommendationsData.marketUpdate.questionsToAsk || "",
+          };
+        }
+      }
+
+      return updated;
+    });
+  }, [negotiationObjectives, targetNegotiation, shouldBePrice, importPrice, exportPrice, tcoPrices, negotiationRecommendationsData]);
+
+  console.log("data", data);
+
+  // Initialize vendor select if vendorsData fills
+  useEffect(() => {
+    if (vendorsData.length > 0) {
+      setVendor(vendorsData[0]);
     }
-  }, [negotiationObjectives]);
-
-  const handleSave = async () => {
-    if (!vendor || !date) {
-      message.error("Please select vendor and date");
-      return;
+    if (vendorsData.length === 0) {
+      setVendor("");
     }
+  }, [vendorsData]);
 
-    setLoading(true);
-    try {
-      console.log("Saving data:", data);
-
-      await createNegotiationObjectives(vendor, date, data);
-
-      message.success("Negotiation objectives saved successfully!");
-    } catch (error) {
-      console.error("Error saving data:", error);
-      message.error("Failed to save data. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const deepClone = <T,>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
   const updateNestedValue = (path: string[], value: string) => {
     setData((prev) => {
-      const newData = { ...prev };
+      const newData = deepClone(prev);
       let current: any = newData;
 
       for (let i = 0; i < path.length - 1; i++) {
+        if (!(path[i] in current)) current[path[i]] = {};
         current = current[path[i]];
       }
 
@@ -163,380 +336,96 @@ const NegotiationObjectives: React.FC<any> = () => {
     });
   };
 
-  // Table configurations
-  const tcoColumns = [
-    {
-      title: "Past Period",
-      dataIndex: "pastPeriod",
-      key: "pastPeriod",
-      render: (text: string) => (
-        <EditableCell
-          value={data.tco.pastPeriod}
-          onChange={(value) => updateNestedValue(["tco", "pastPeriod"], value)}
-          placeholder="Past period value"
-        />
-      ),
-    },
-    {
-      title: "Current",
-      dataIndex: "current",
-      key: "current",
-      render: (text: string) => (
-        <EditableCell
-          value={data.tco.current}
-          onChange={(value) => updateNestedValue(["tco", "current"], value)}
-          placeholder="Current value"
-        />
-      ),
-    },
-    {
-      title: "Forecast",
-      dataIndex: "forecast",
-      key: "forecast",
-      render: (text: string) => (
-        <EditableCell
-          value={data.tco.forecast}
-          onChange={(value) => updateNestedValue(["tco", "forecast"], value)}
-          placeholder="Forecast value"
-        />
-      ),
-    },
-  ];
+  const formatTo2DecimalString = (val: number | string | undefined): string => {
+    const num = typeof val === "string" ? parseFloat(val) : val;
+    return typeof num === "number" && isFinite(num) ? num.toFixed(2) : "";
+  };
 
-  const tcoData = [{ key: "1" }];
+  const handleSave = async () => {
+    if (!vendor || !date) {
+      message.error("Please select vendor and date");
+      return;
+    }
+    setLoading(true);
+    try {
+      await createNegotiationObjectives(vendor, date, data, selectedMaterial?.material_id || "");
+      message.success("Negotiation objectives saved successfully!");
+    } catch (e) {
+      console.error("Error saving data:", e);
+      message.error("Failed to save data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const cleanSheetColumns = [
-    {
-      title: "Route",
-      dataIndex: "route",
-      key: "route",
-      width: "25%",
-    },
-    {
-      title: "Past Period",
-      dataIndex: "pastPeriod",
-      key: "pastPeriod",
-      width: "25%",
-    },
-    {
-      title: "Current",
-      dataIndex: "current",
-      key: "current",
-      width: "25%",
-    },
-    {
-      title: "Forecast",
-      dataIndex: "forecast",
-      key: "forecast",
-      width: "25%",
-    },
-  ];
+  const handleGenerateRecommendations = async () => {
+    try {
+      if (!vendor || !date || !selectedMaterial?.material_id) {
+        return message.error("Please select material, vendor and date first");
+      }
+      
+      setLoadingRecommendations(true);
+      setRecommendationStatus("Generating recommendations...");
 
-  const cleanSheetData = [
-    {
-      key: "1",
-      route: "Route A",
-      pastPeriod: (
-        <EditableCell
-          value={data.cleanSheetPrice.routeA.pastPeriod}
-          onChange={(value) =>
-            updateNestedValue(
-              ["cleanSheetPrice", "routeA", "pastPeriod"],
-              value
-            )
-          }
-          placeholder="Past period"
-        />
-      ),
-      current: (
-        <EditableCell
-          value={data.cleanSheetPrice.routeA.current}
-          onChange={(value) =>
-            updateNestedValue(["cleanSheetPrice", "routeA", "current"], value)
-          }
-          placeholder="Current"
-        />
-      ),
-      forecast: (
-        <EditableCell
-          value={data.cleanSheetPrice.routeA.forecast}
-          onChange={(value) =>
-            updateNestedValue(["cleanSheetPrice", "routeA", "forecast"], value)
-          }
-          placeholder="Forecast"
-        />
-      ),
-    },
-    {
-      key: "2",
-      route: "Route B",
-      pastPeriod: (
-        <EditableCell
-          value={data.cleanSheetPrice.routeB.pastPeriod}
-          onChange={(value) =>
-            updateNestedValue(
-              ["cleanSheetPrice", "routeB", "pastPeriod"],
-              value
-            )
-          }
-          placeholder="Past period"
-        />
-      ),
-      current: (
-        <EditableCell
-          value={data.cleanSheetPrice.routeB.current}
-          onChange={(value) =>
-            updateNestedValue(["cleanSheetPrice", "routeB", "current"], value)
-          }
-          placeholder="Current"
-        />
-      ),
-      forecast: (
-        <EditableCell
-          value={data.cleanSheetPrice.routeB.forecast}
-          onChange={(value) =>
-            updateNestedValue(["cleanSheetPrice", "routeB", "forecast"], value)
-          }
-          placeholder="Forecast"
-        />
-      ),
-    },
-  ];
+      const res = await refreshRecommendation(vendor, date, selectedMaterial.material_id);
 
-  const importExportColumns = [
-    {
-      title: "Type",
-      dataIndex: "type",
-      key: "type",
-      width: "25%",
-    },
-    {
-      title: "Past Period",
-      dataIndex: "pastPeriod",
-      key: "pastPeriod",
-      width: "25%",
-    },
-    {
-      title: "Current",
-      dataIndex: "current",
-      key: "current",
-      width: "25%",
-    },
-    {
-      title: "Forecast",
-      dataIndex: "forecast",
-      key: "forecast",
-      width: "25%",
-    },
-  ];
+      console.log("API Response:", res);
 
-  const importExportData = [
-    {
-      key: "1",
-      type: "Import",
-      pastPeriod: (
-        <EditableCell
-          value={data.importExportData.import.pastPeriod}
-          onChange={(value) =>
-            updateNestedValue(
-              ["importExportData", "import", "pastPeriod"],
-              value
-            )
+      // Check if recommendations are being processed
+      if (res?.status === "processing") {
+        message.info(res.message || "Recommendations are being generated. Please wait...");
+        
+        // Poll for completion every 5 seconds
+        const pollInterval = setInterval(async () => {
+          try {
+            await queryClient.invalidateQueries({
+              queryKey: ["negotiationRecommendations", vendor, date],
+            });
+            
+            const latestData = queryClient.getQueryData([
+              "negotiationRecommendations", 
+              vendor, 
+              date
+            ]) as any;
+            
+            // If status is no longer "processing", stop polling
+            if (latestData && latestData.status !== "processing") {
+              clearInterval(pollInterval);
+              setLoadingRecommendations(false);
+              setRecommendationStatus(null);
+              message.success("Recommendations triggered successfully!");
+            }
+          } catch (err) {
+            console.error("Polling error:", err);
+            clearInterval(pollInterval);
+            setLoadingRecommendations(false);
+            setRecommendationStatus(null);
           }
-          placeholder="Past period"
-        />
-      ),
-      current: (
-        <EditableCell
-          value={data.importExportData.import.current}
-          onChange={(value) =>
-            updateNestedValue(["importExportData", "import", "current"], value)
-          }
-          placeholder="Current"
-        />
-      ),
-      forecast: (
-        <EditableCell
-          value={data.importExportData.import.forecast}
-          onChange={(value) =>
-            updateNestedValue(["importExportData", "import", "forecast"], value)
-          }
-          placeholder="Forecast"
-        />
-      ),
-    },
-    {
-      key: "2",
-      type: "Export",
-      pastPeriod: (
-        <EditableCell
-          value={data.importExportData.export.pastPeriod}
-          onChange={(value) =>
-            updateNestedValue(
-              ["importExportData", "export", "pastPeriod"],
-              value
-            )
-          }
-          placeholder="Past period"
-        />
-      ),
-      current: (
-        <EditableCell
-          value={data.importExportData.export.current}
-          onChange={(value) =>
-            updateNestedValue(["importExportData", "export", "current"], value)
-          }
-          placeholder="Current"
-        />
-      ),
-      forecast: (
-        <EditableCell
-          value={data.importExportData.export.forecast}
-          onChange={(value) =>
-            updateNestedValue(["importExportData", "export", "forecast"], value)
-          }
-          placeholder="Forecast"
-        />
-      ),
-    },
-  ];
+        }, 5000); // Poll every 5 seconds
 
-  const targetNegotiationColumns = [
-    {
-      title: "Min (in Rs./$)",
-      dataIndex: "min",
-      key: "min",
-      width: "50%",
-      render: () => (
-        <EditableCell
-          value={data.targetNegotiation.min}
-          onChange={(value) =>
-            updateNestedValue(["targetNegotiation", "min"], value)
-          }
-          placeholder="Minimum value"
-        />
-      ),
-    },
-    {
-      title: "Max (in Rs./$)",
-      dataIndex: "max",
-      key: "max",
-      width: "50%",
-      render: () => (
-        <EditableCell
-          value={data.targetNegotiation.max}
-          onChange={(value) =>
-            updateNestedValue(["targetNegotiation", "max"], value)
-          }
-          placeholder="Maximum value"
-        />
-      ),
-    },
-  ];
-
-  const targetNegotiationData = [{ key: "1" }];
-
-  const strategyColumns = [
-    {
-      title: "Supplier's SOB",
-      dataIndex: "supplierSOB",
-      key: "supplierSOB",
-      width: "33.33%",
-      render: () => (
-        <EditableCell
-          value={data.strategy.supplierSOB}
-          onChange={(value) =>
-            updateNestedValue(["strategy", "supplierSOB"], value)
-          }
-          placeholder="Enter supplier's SOB"
-          multiline
-        />
-      ),
-    },
-    {
-      title: "What we want to avoid",
-      dataIndex: "whatWeWantToAvoid",
-      key: "whatWeWantToAvoid",
-      width: "33.33%",
-      render: () => (
-        <EditableCell
-          value={data.strategy.whatWeWantToAvoid}
-          onChange={(value) =>
-            updateNestedValue(["strategy", "whatWeWantToAvoid"], value)
-          }
-          placeholder="What we want to avoid"
-          multiline
-        />
-      ),
-    },
-    {
-      title: "What they want to avoid",
-      dataIndex: "whatTheyWantToAvoid",
-      key: "whatTheyWantToAvoid",
-      width: "33.33%",
-      render: () => (
-        <EditableCell
-          value={data.strategy.whatTheyWantToAvoid}
-          onChange={(value) =>
-            updateNestedValue(["strategy", "whatTheyWantToAvoid"], value)
-          }
-          placeholder="What they want to avoid"
-          multiline
-        />
-      ),
-    },
-  ];
-
-  const strategyData = [{ key: "1" }];
-
-  const marketUpdateColumns = [
-    {
-      title: "My Info",
-      dataIndex: "myInfo",
-      key: "myInfo",
-      width: "50%",
-      render: () => (
-        <EditableCell
-          value={data.marketUpdate.myInfo}
-          onChange={(value) =>
-            updateNestedValue(["marketUpdate", "myInfo"], value)
-          }
-          placeholder="Enter your market information"
-          multiline
-        />
-      ),
-    },
-    {
-      title: "Questions to ask",
-      dataIndex: "questionsToAsk",
-      key: "questionsToAsk",
-      width: "50%",
-      render: () => (
-        <EditableCell
-          value={data.marketUpdate.questionsToAsk}
-          onChange={(value) =>
-            updateNestedValue(["marketUpdate", "questionsToAsk"], value)
-          }
-          placeholder="Enter questions to ask"
-          multiline
-        />
-      ),
-    },
-  ];
-
-  const marketUpdateData = [{ key: "1" }];
-
-  // Common table styles
-  const tableStyle = {
-    ".ant-table-thead > tr > th": {
-      backgroundColor: "#a0bf3f !important",
-      color: "white !important",
-      fontWeight: "bold",
-      textAlign: "center" as const,
-    },
-    ".ant-table-tbody > tr > td": {
-      padding: "12px",
-    },
+        // Stop polling after 2 minutes
+        setTimeout(() => {
+          clearInterval(pollInterval);
+          setLoadingRecommendations(false);
+          setRecommendationStatus(null);
+        }, 120000);
+        
+      } else {
+        // Recommendations generated immediately
+        message.success("Recommendations generated successfully");
+        setRecommendationStatus(null);
+        await queryClient.invalidateQueries({
+          queryKey: ["negotiationRecommendations", vendor, date],
+        });
+        setLoadingRecommendations(false);
+      }
+      
+    } catch (err) {
+      console.error("Error generating recommendations:", err);
+      message.error("Failed to generate recommendations");
+      setLoadingRecommendations(false);
+      setRecommendationStatus(null);
+    }
   };
 
   return (
@@ -559,337 +448,124 @@ const NegotiationObjectives: React.FC<any> = () => {
         `}
       </style>
 
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          Negotiation Objectives:
-        </h1>
-      </div>
+      {/* Header and material selector */}
+      <NegotiationHeader 
+        selectedMaterial={selectedMaterial} 
+        materials={materials || []} 
+        onMaterialChange={setSelectedMaterial} 
+      />
 
-      {/* Vendor and Date Selection */}
+      {/* Vendor and Date selectors */}
       <Card className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Vendor
-            </label>
-            <Select
-              placeholder="Choose vendor"
-              value={vendor}
-              onChange={(value) => setVendor(value)}
-              className="w-full"
-              size="large"
-            >
-              {vendorsData.map((vendor) => (
-                <Option key={vendor} value={vendor}>
-                  {vendor}
-                </Option>
-              ))}
-            </Select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Select Date
-            </label>
-            <DatePicker
-              value={date ? dayjs(date) : null}
-              onChange={(date) =>
-                setDate(date ? date.format("YYYY-MM-DD") : "")
-              }
-              className="w-full"
-              size="large"
-              placeholder="Select date"
-            />
-          </div>
-        </div>
+        <VendorDateSelector 
+          vendor={vendor} 
+          date={date} 
+          vendors={vendorsData} 
+          onVendorChange={setVendor} 
+          onDateChange={setDate} 
+        />
       </Card>
 
-      {/* Kraljic Box Position */}
+      {/* Processing Status Alert */}
+      {recommendationStatus && (
+        <Alert
+          message="Generating Recommendations"
+          description={recommendationStatus}
+          type="info"
+          showIcon
+          className="mb-6"
+        />
+      )}
+
+      {/* Objective Card */}
       <Card className="mb-6">
-        <div className="border border-gray-300">
-          <div className="bg-gray-100 p-3 border-b">
-            <h3 className="font-medium text-gray-800">{vendor || ""}</h3>
-          </div>
-          <div
-            style={{ backgroundColor: "#a0bf3f" }}
-            className="p-3 text-white text-center font-medium"
-          >
-            Objective
-          </div>
-          <div className="p-3">
-            <EditableCell
-              value={data.objective}
-              onChange={(value) =>
-                setData((prev) => ({ ...prev, objective: value }))
-              }
-              placeholder="Enter objective details..."
-              multiline
-            />
-          </div>
-        </div>
+        <ObjectiveCard 
+          vendor={vendor} 
+          objective={data.objective} 
+          onChange={(val) => setData((prev) => ({ ...prev, objective: val }))} 
+        />
       </Card>
 
       {/* TCO Section */}
       <Card className="mb-6">
-        <div className="bg-gray-100 p-3 border-b">
-          <h3 className="font-medium text-gray-800">1. TCO</h3>
-        </div>
-        <Table
-          className="custom-table"
-          columns={tcoColumns}
-          dataSource={tcoData}
-          pagination={false}
-          bordered
-          size="middle"
-        />
+        <h3 className="font-medium text-gray-800 mb-2">1. Market Price</h3>
+        <TcoTable data={data.tco} onChange={updateNestedValue} />
       </Card>
 
       {/* Clean Sheet Price */}
       <Card className="mb-6">
-        <div className="bg-gray-100 p-3 border-b">
-          <h3 className="font-medium text-gray-800">
-            2. Clean sheet price with 10% margin
-          </h3>
-        </div>
-        <Table
-          className="custom-table"
-          columns={cleanSheetColumns}
-          dataSource={cleanSheetData}
-          pagination={false}
-          bordered
-          size="middle"
+        <h3 className="font-medium text-gray-800 mb-2">2. Should be cost from Cost sheet</h3>
+        <CleanSheetPriceTable 
+          routeA={data.cleanSheetPrice.routeA} 
+          routeB={data.cleanSheetPrice.routeB} 
+          onChange={updateNestedValue} 
         />
       </Card>
 
       {/* Import/Export Data */}
       <Card className="mb-6">
-        <div className="bg-gray-100 p-3 border-b">
-          <h3 className="font-medium text-gray-800">
-            3. Import/Export Data Analysis
-          </h3>
-        </div>
-        <Table
-          className="custom-table"
-          columns={importExportColumns}
-          dataSource={importExportData}
-          pagination={false}
-          bordered
-          size="middle"
+        <h3 className="font-medium text-gray-800 mb-2">3. Import/Export Data Analysis</h3>
+        <ImportExportTable 
+          importData={data.importExportData.import} 
+          exportData={data.importExportData.export} 
+          onChange={updateNestedValue} 
         />
       </Card>
 
       {/* Target Negotiation Window */}
       <Card className="mb-6">
-        <div className="bg-gray-100 p-3 border-b">
-          <h3 className="font-medium text-gray-800">
-            4. Target negotiation window
-          </h3>
-        </div>
-        <Table
-          className="custom-table"
-          columns={targetNegotiationColumns}
-          dataSource={targetNegotiationData}
-          pagination={false}
-          bordered
-          size="middle"
+        <h3 className="font-medium text-gray-800 mb-2">4. Target negotiation window</h3>
+        <TargetNegotiationTable
+          targetValues={data.targetNegotiation}
+          onChange={updateNestedValue}
         />
       </Card>
 
       {/* Wishlists and Concessions */}
       <Card className="mb-6">
-        <div className="bg-gray-100 p-3 border-b">
-          <h3 className="font-medium text-gray-800">
-            5. Wishlists and Concessions
-          </h3>
-        </div>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <div
-              style={{ backgroundColor: "#a0bf3f" }}
-              className="p-3 text-white text-center font-medium mb-2"
-            >
-              Wishlist
-            </div>
-            <div className="border border-gray-300">
-              <div className="grid grid-cols-2 bg-gray-50 border-b">
-                <div className="p-2 border-r font-medium">Payment terms</div>
-                <div className="p-2 font-medium">SOB</div>
-              </div>
-              <div className="grid grid-cols-2 border-b">
-                <div className="p-2 border-r">
-                  <EditableCell
-                    value={data.wishlists.wishlist.paymentTerms.levers}
-                    onChange={(value) =>
-                      updateNestedValue(
-                        ["wishlists", "wishlist", "paymentTerms", "levers"],
-                        value
-                      )
-                    }
-                    placeholder="Enter levers"
-                  />
-                </div>
-                <div className="p-2">
-                  <EditableCell
-                    value={data.wishlists.wishlist.paymentTerms.remarks}
-                    onChange={(value) =>
-                      updateNestedValue(
-                        ["wishlists", "wishlist", "paymentTerms", "remarks"],
-                        value
-                      )
-                    }
-                    placeholder="Enter remarks"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 bg-gray-50 border-b">
-                <div className="p-2 border-r font-medium">Security</div>
-                <div className="p-2 font-medium">Recycling</div>
-              </div>
-              <div className="grid grid-cols-2">
-                <div className="p-2 border-r">
-                  <EditableCell
-                    value={data.wishlists.wishlist.security.levers}
-                    onChange={(value) =>
-                      updateNestedValue(
-                        ["wishlists", "wishlist", "security", "levers"],
-                        value
-                      )
-                    }
-                    placeholder="Enter levers"
-                  />
-                </div>
-                <div className="p-2">
-                  <EditableCell
-                    value={data.wishlists.wishlist.security.remarks}
-                    onChange={(value) =>
-                      updateNestedValue(
-                        ["wishlists", "wishlist", "security", "remarks"],
-                        value
-                      )
-                    }
-                    placeholder="Enter remarks"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          <div>
-            <div
-              style={{ backgroundColor: "#a0bf3f" }}
-              className="p-3 text-white text-center font-medium mb-2"
-            >
-              Concession
-            </div>
-            <div className="border border-gray-300">
-              <div className="grid grid-cols-2 bg-gray-50 border-b">
-                <div className="p-2 border-r font-medium">Levers</div>
-                <div className="p-2 font-medium">Remarks</div>
-              </div>
-              <div className="grid grid-cols-2 border-b">
-                <div className="p-2 border-r">
-                  <EditableCell
-                    value={data.wishlists.concession.paymentTerms.levers}
-                    onChange={(value) =>
-                      updateNestedValue(
-                        ["wishlists", "concession", "paymentTerms", "levers"],
-                        value
-                      )
-                    }
-                    placeholder="Enter levers"
-                  />
-                </div>
-                <div className="p-2">
-                  <EditableCell
-                    value={data.wishlists.concession.paymentTerms.remarks}
-                    onChange={(value) =>
-                      updateNestedValue(
-                        ["wishlists", "concession", "paymentTerms", "remarks"],
-                        value
-                      )
-                    }
-                    placeholder="Enter remarks"
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 border-b">
-                <div className="p-2 border-r">
-                  <EditableCell
-                    value={data.wishlists.concession.security.levers}
-                    onChange={(value) =>
-                      updateNestedValue(
-                        ["wishlists", "concession", "security", "levers"],
-                        value
-                      )
-                    }
-                    placeholder="Enter levers"
-                  />
-                </div>
-                <div className="p-2">
-                  <EditableCell
-                    value={data.wishlists.concession.security.remarks}
-                    onChange={(value) =>
-                      updateNestedValue(
-                        ["wishlists", "concession", "security", "remarks"],
-                        value
-                      )
-                    }
-                    placeholder="Enter remarks"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <h3 className="font-medium text-gray-800 mb-2">5. Wishlists and Concessions</h3>
+        <WishlistConcession wishlists={data.wishlists} onChange={updateNestedValue} />
       </Card>
 
-      {/* Strategy */}
-      <Card className="mb-6">
-        <div className="bg-gray-100 p-3 border-b">
-          <h3 className="font-medium text-gray-800">6. Strategy</h3>
-        </div>
-        <Table
-          className="custom-table"
-          columns={strategyColumns}
-          dataSource={strategyData}
-          pagination={false}
-          bordered
-          size="middle"
-        />
-      </Card>
-
-      {/* Market Update */}
-      <Card className="mb-6">
-        <div className="bg-gray-100 p-3 border-b">
-          <h3 className="font-medium text-gray-800">7. Market Update</h3>
-        </div>
-        <Table
-          className="custom-table"
-          columns={marketUpdateColumns}
-          dataSource={marketUpdateData}
-          pagination={false}
-          bordered
-          size="middle"
-        />
-      </Card>
-
-      {/* Save Template Button */}
-      <div className="flex justify-end">
+      {/* Generate Recommendations Button */}
+      <div className="mb-4 flex justify-end">
         <Button
           type="primary"
-          size="large"
-          onClick={handleSave}
-          loading={loading}
-          style={{
-            backgroundColor: "#ff7a00",
-            borderColor: "#ff7a00",
-            fontSize: "16px",
-            height: "45px",
-            paddingLeft: "30px",
-            paddingRight: "30px",
-          }}
-        >
-          Save Template
+          onClick={handleGenerateRecommendations}
+          loading={loadingRecommendations}
+          disabled={!selectedMaterial?.material_id || !vendor || !date}
+          style={{ 
+            backgroundColor: "#ff7a00", 
+            borderColor: "#ff7a00", 
+            fontSize: "16px", 
+            height: "45px", 
+            paddingLeft: "30px", 
+            paddingRight: "30px" 
+          }}>
+          <span style={{ color: "white" }}>
+            {loadingRecommendations ? "Generating..." : "Generate Recommendations"}
+          </span>
         </Button>
       </div>
+
+      {/* Strategy Section */}
+      <Card className="mb-6">
+        <h3 className="font-medium text-gray-800 mb-2">6. Strategy</h3>
+        <StrategyTable
+          strategy={data.strategy}
+          onChange={updateNestedValue}
+          isLoadingAvoids={loadingRecommendations}
+        />
+      </Card>
+
+      {/* Market Update Section */}
+      <Card className="mb-6">
+        <h3 className="font-medium text-gray-800 mb-2">7. Market Update</h3>
+        <MarketUpdateTable marketUpdate={data.marketUpdate} onChange={updateNestedValue} />
+      </Card>
+
+      {/* Save Button */}
+      <SaveButton onSave={handleSave} loading={loading} />
     </div>
   );
 };

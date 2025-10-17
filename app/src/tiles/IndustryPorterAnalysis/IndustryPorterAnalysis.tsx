@@ -1,10 +1,13 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { FaExchangeAlt, FaUsers, FaUserTie, FaBalanceScale, FaIndustry } from "react-icons/fa";
+import { ReloadOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import { useBusinessAPI } from "../../services/BusinessProvider";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Button } from "antd";
 
+// Icon mapping
 const forceIconMap: Record<string, React.ReactNode> = {
   bargaining_power_suppliers: <FaUserTie size={22} className="text-gray-500 mr-2" />,
   threat_of_substitution: <FaExchangeAlt size={22} className="text-gray-500 mr-2" />,
@@ -27,21 +30,44 @@ const gridTemplate = [
 ];
 
 const IndustryPorterAnalysis: React.FC = () => {
-  const { getPortersAnalysis } = useBusinessAPI();
+  const { getPortersAnalysis, refreshPortersAnalysis } = useBusinessAPI();
   const selectedMaterial = useSelector((state: RootState) => state.material.globalSelectedMaterial);
-  const materialId = selectedMaterial?.material_id;
+  const materialCode = selectedMaterial?.material_id;
   const materialDesc = selectedMaterial?.material_description || "All Material";
 
+  const [regenLoading, setRegenLoading] = useState(false);
+  const queryClient = useQueryClient();
+
   const { data, isLoading, isError } = useQuery({
-    queryKey: ["portersAnalysis", materialId],
-    queryFn: () => getPortersAnalysis(materialId!),
-    enabled: typeof materialId === "string" && !!materialId,
+    queryKey: ["portersAnalysis", materialCode],
+    queryFn: () => getPortersAnalysis(materialCode || ""),
+    enabled: typeof materialCode === "string" && !!materialCode,
     retry: false,
   });
 
+
+  const handleRegenerate = async () => {
+    setRegenLoading(true);
+    try {
+      if (typeof materialCode === "string" && materialCode) {
+        await queryClient.fetchQuery({
+          queryKey: ["portersAnalysis", materialCode],
+          queryFn: () => refreshPortersAnalysis(materialCode, true),
+          staleTime: 0,
+        });
+        queryClient.invalidateQueries({ queryKey: ["portersAnalysis", materialCode] });
+      }
+    } finally {
+      setRegenLoading(false);
+    }
+  };
+
   const forces = useMemo(() => {
     if (!data || isError) return null;
-    const porters = data.porters_analysis || {};
+
+    // FIX: Support both top-level and nested structures
+    const porters = data.porters_analysis || data;
+
     const keys = [
       "bargaining_power_suppliers",
       "threat_of_substitution",
@@ -49,9 +75,10 @@ const IndustryPorterAnalysis: React.FC = () => {
       "bargaining_power_buyers",
       "competitive_rivalry",
     ];
-    // Only return forces if all keys are present and have data
+
     const allPresent = keys.every((key) => porters[key]);
     if (!allPresent) return null;
+
     return keys.map((key) => {
       const force = porters[key];
       let color = "text-lime-700";
@@ -78,9 +105,30 @@ const IndustryPorterAnalysis: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 pb-12 flex flex-col items-center justify-center">
       <div className="max-w-5xl w-full bg-white rounded-3xl shadow-lg px-10 py-10 mt-10">
-        <h1 className="text-2xl font-bold text-gray-800 mb-10">
-          Porter's Five Forces Analysis for: <span className="text-lime-700">{materialDesc}</span>
-        </h1>
+        {/* Header row with flex alignment */}
+        <div className="flex items-center justify-between mb-10">
+          <h1 className="text-2xl font-bold text-gray-800">
+            Porter's Five Forces Analysis for: <span className="text-lime-700">{materialDesc}</span>
+          </h1>
+          <Button
+            icon={<ReloadOutlined />}
+            loading={regenLoading}
+            // type="default"
+            onClick={handleRegenerate}
+            // className="ml-4"
+            style={{
+              backgroundColor: "#a0bf3f",
+              borderColor: "#a0bf3f",
+              fontSize: "16px",
+              height: "40px",
+              paddingLeft: "30px",
+              paddingRight: "30px"
+            }}
+          >
+            Regenerate Porter's Analysis
+          </Button>
+        </div>
+        {/* Card grid below header row */}
         {isLoading ? (
           <div className="text-center text-gray-500 py-20">Loading Porter's analysis...</div>
         ) : !forces ? (
@@ -128,4 +176,4 @@ const ForceCard: React.FC<{
   </div>
 );
 
-export default IndustryPorterAnalysis; 
+export default IndustryPorterAnalysis;

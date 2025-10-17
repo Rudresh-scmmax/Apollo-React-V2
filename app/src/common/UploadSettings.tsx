@@ -11,56 +11,40 @@ interface UploadSettingsProps {
 
 const exampleData = [
   {
-    material_id: "M0003",
-    date: "2024-12-01",
-    price_per_uom: 1025.5,
-    currency: "USD",
-    region: "IN",
-    frequency: "Monthly",
-    capacity_utilization: 85,
-    conversion_spread: 120.5,
-    business_cycle: "High",
-    demand_outlook: "Stable",
-    supply_disruption: "NO",
+    material_price_type_period_id: "MPTP0001",
+    material_id: "100724-000000",
+    period_start_date: "2025-09-11",
+    period_end_date: "2025-09-11",
+    country: "",
+    price: 1250.0,
+    price_currency: "",
+    price_history_source: "External Source",
+    price_type: "Standard",
+    location_id: 212,
   },
   {
-    material_id: "M0003",
-    date: "2025-01-01",
-    price_per_uom: 830.75,
-    currency: "USD",
-    region: "IN",
-    frequency: "Quarterly",
-    capacity_utilization: 90,
-    conversion_spread: 130.2,
-    business_cycle: "Low",
-    demand_outlook: "Low",
-    supply_disruption: "YES",
+    material_price_type_period_id: "MPTP0002",
+    material_id: "100724-000000",
+    period_start_date: "2025-05-08",
+    period_end_date: "2025-05-08",
+    country: "",
+    price: 859.00,
+    price_currency: "USD",
+    price_history_source: "External Source",
+    price_type: "Standard",
+    location_id: 212,
   },
   {
-    material_id: "M0003",
-    date: "2025-02-15",
-    price_per_uom: 676.3,
-    currency: "USD",
-    region: "IN",
-    frequency: "Monthly",
-    capacity_utilization: 80,
-    conversion_spread: 110.8,
-    business_cycle: "Rise",
-    demand_outlook: "High",
-    supply_disruption: "NO",
-  },
-  {
-    material_id: "M0003",
-    date: "2025-03-10",
-    price_per_uom: 945.0,
-    currency: "USD",
-    region: "IN",
-    frequency: "Monthly",
-    capacity_utilization: 75,
-    conversion_spread: 140.0,
-    business_cycle: "Peak",
-    demand_outlook: "Medium",
-    supply_disruption: "YES",
+    material_price_type_period_id: "MPTP0003",
+    material_id: "100724-000000",
+    period_start_date: "2025-08-01",
+    period_end_date: "2025-08-01",
+    country: "",
+    price: 1120.0,
+    price_currency: "USD",
+    price_history_source: "External Source",
+    price_type: "Standard",
+    location_id: 212,
   },
 ];
 
@@ -114,13 +98,16 @@ const UploadSettings: React.FC<UploadSettingsProps> = ({ onUploadSuccess }) => {
 
   return (
     <div className="mt-4 p-4 border rounded-lg bg-gray-50 shadow-sm">
-      <h3 className="text-lg font-semibold mb-2">Upload CSV Price History</h3>
+      <h3 className="text-lg font-semibold mb-2">Upload Material Price History</h3>
       <input
         type="file"
         accept=".csv, .xlsx"
         ref={fileUploadRef}
         onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
       />
+      <div className="text-xs text-gray-500 mt-1 mb-2">
+        Upload CSV or Excel files with material price history data.
+      </div>
       <div className="mt-2 flex gap-4 items-center">
         <button
           className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
