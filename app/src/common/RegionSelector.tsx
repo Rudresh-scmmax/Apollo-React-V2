@@ -1,7 +1,7 @@
 import React, { useEffect } from "react";
 
 interface RegionSelectorProps {
-  regions: string[] | undefined;
+  regions: {location_id: number, location_name: string}[] | undefined;
   selectedRegion: string;
   setSelectedRegion: (region: string) => void;
 }
@@ -13,7 +13,7 @@ const RegionSelector: React.FC<RegionSelectorProps> = ({
 }) => {
   useEffect(() => {
     if (regions && regions.length > 0 && !selectedRegion) {
-      setSelectedRegion(regions[0]);
+      setSelectedRegion(regions[0].location_name);
     }
   }, [regions, selectedRegion, setSelectedRegion]);
 
@@ -25,8 +25,8 @@ const RegionSelector: React.FC<RegionSelectorProps> = ({
     >
       <option>Select Region</option>
       {regions?.map((region, index) => (
-        <option key={index} value={region}>
-          {region}
+        <option key={index} value={region.location_name}>
+          {region.location_name}
         </option>
       ))}
     </select>

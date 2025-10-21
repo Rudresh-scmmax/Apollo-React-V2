@@ -1,7 +1,7 @@
 import React from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSelector } from "react-redux";
 import { RootState } from "../../../store/store";
 import {
@@ -9,6 +9,7 @@ import {
   useBusinessAPI,
 } from "../../../services/BusinessProvider";
 import CostumTextField from "../../../common/CostumTextField";
+import { message } from "antd";
 
 interface DataPoint {
   x: string;
@@ -17,28 +18,52 @@ interface DataPoint {
 }
 
 interface GlycerinePriceChartProps {
-  region: string;
+  locationId: number | null;
+  model: string;
 }
 
 const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
-  region,
+  locationId,
+  model,
 }) => {
-  const { getMaterialPrices, getRecomendations } = useBusinessAPI();
+  const { getMaterialPrices, getRecomendations, triggerForecast } =
+    useBusinessAPI();
   const selectedMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
+  const queryClient = useQueryClient();
+
   const { data: materialPriceHistory } = useQuery({
-    queryKey: ["materialPrices", selectedMaterial, region],
-    queryFn: () => getMaterialPrices(selectedMaterial?.material_id, region),
-    enabled: !!selectedMaterial && !!region,
+    queryKey: ["materialPrices", selectedMaterial, locationId, model],
+    queryFn: () => getMaterialPrices(selectedMaterial?.material_id, locationId?.toString(), model),
+    enabled: !!selectedMaterial && locationId !== null,
   });
 
   const { data: recomendations } = useQuery<StrategyRecommendation>({
-    queryKey: ["recomendations", selectedMaterial, region],
-    queryFn: () => getRecomendations(selectedMaterial?.material_id, region),
-    enabled: !!selectedMaterial && !!region,
+    queryKey: ["recomendations", selectedMaterial, locationId, model],
+    queryFn: () => getRecomendations(selectedMaterial?.material_id, locationId?.toString(), model),
+    enabled: !!selectedMaterial && locationId !== null,
   });
+
+  const handleTriggerForecast = async () => {
+    try {
+      const response = await triggerForecast(
+        selectedMaterial?.material_id || "",
+        locationId?.toString() || ""
+      );
+      message.success("Forecast triggered successfully");
+      console.log("Forecast response:", response);
+
+      queryClient.invalidateQueries({
+        queryKey: ["materialPrices", selectedMaterial, locationId, model],
+      });
+    } catch (error) {
+      console.error("Failed to trigger forecast", error);
+      message.error("Failed to trigger forecast");
+    }
+  };
+
   // Sort data by date to ensure correct ordering
   const sortedData =
     materialPriceHistory?.slice().sort((a, b) => {
@@ -95,10 +120,10 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
           y: parseFloat(item.long_forecast),
         });
       }
-      if (item.forecast_average) {
+      if (item.forecast_value) {
         averageData.push({
           x: item.month,
-          y: parseFloat(item.forecast_average),
+          y: parseFloat(item.forecast_value),
         });
       }
     }
@@ -357,9 +382,10 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
             "Forecast Average",
           ];
           const forecastColors = [
-            // "#FF9B6E", 
-            "#9B6EFF", 
-            "#808080"];
+            // "#FF9B6E",
+            "#9B6EFF",
+            "#808080",
+          ];
 
           for (let i = 1; i <= 3; i++) {
             const value = series[i]?.[dataPointIndex];
@@ -397,10 +423,28 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
           padding: "15px",
           borderRadius: "4px",
           marginBottom: "20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
         }}
       >
-        {recomendations?.latest_news_title}
+        <div style={{ flex: 1 }}>{recomendations?.latest_news_title}</div>
+        <button
+          onClick={handleTriggerForecast}
+          style={{
+            backgroundColor: "#1890ff",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            padding: "8px 16px",
+            cursor: "pointer",
+            marginLeft: "20px",
+          }}
+        >
+          Trigger Forecast
+        </button>
       </div>
+
       <div
         style={{
           display: "flex",
@@ -498,29 +542,6 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
                   {conversionChangeText}
                 </div>
               )}
-            </div>
-          </div>
-          <div>
-            <h4 style={{ marginBottom: "10px" }}>
-              {recomendations?.recommendation?.recommendation}
-            </h4>
-            <div style={{ marginBottom: "10px" }}>
-              <div style={{ fontWeight: "bold" }}>Conservative</div>
-              <CostumTextField
-                text={recomendations?.recommendation?.strategies?.conservative || ""}
-              />
-            </div>
-            <div style={{ marginBottom: "10px" }}>
-              <div style={{ fontWeight: "bold" }}>Balanced</div>
-              <CostumTextField
-                text={recomendations?.recommendation?.strategies?.balanced || ""}
-              />
-            </div>
-            <div>
-              <div style={{ fontWeight: "bold" }}>Aggressive</div>
-              <CostumTextField
-                text={recomendations?.recommendation?.strategies?.aggressive || ""}
-              />
             </div>
           </div>
         </div>

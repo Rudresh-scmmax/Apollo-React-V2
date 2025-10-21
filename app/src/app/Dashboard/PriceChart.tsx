@@ -15,16 +15,16 @@ interface DataPoint {
 
 interface PriceChartWithNewsProps {
   materialId: string;
-  region: string;
+  locationId: number;
 }
 
-const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, region }) => {
+const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, locationId }) => {
   const { getMaterialPrices } = useBusinessAPI();
 
   const { data: materialPriceHistory, isLoading } = useQuery({
-    queryKey: ["materialPrices", materialId, region],
-    queryFn: () => getMaterialPrices(materialId, region),
-    enabled: !!materialId && !!region,
+    queryKey: ["materialPrices", materialId, locationId],
+    queryFn: () => getMaterialPrices(materialId, locationId.toString()),
+    enabled: !!materialId && !!locationId,
   });
 
   const currentDate = new Date();
@@ -70,8 +70,8 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, reg
       if (item.long_forecast) {
         longTermData.push({ x: item.month, y: parseFloat(item.long_forecast) });
       }
-      if (item.forecast_average) {
-        averageData.push({ x: item.month, y: parseFloat(item.forecast_average) });
+      if (item.forecast_value) {
+        averageData.push({ x: item.month, y: parseFloat(item.forecast_value) });
       }
     }
   });

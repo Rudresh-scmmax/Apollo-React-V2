@@ -20,7 +20,7 @@ const CyclicalPatterns: React.FC = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string>("");
 
-  const { data: regions } = useQuery<string[]>({
+  const { data: regions } = useQuery<{location_id: number, location_name: string}[]>({
     queryKey: ["regions", selectedMaterial?.material_id],
     queryFn: () => getRegions(selectedMaterial?.material_id || ""),
     enabled: !!selectedMaterial?.material_id,
@@ -48,7 +48,7 @@ const CyclicalPatterns: React.FC = () => {
 
   useEffect(() => {
     if (regions && regions.length > 0 && !selectedRegion) {
-      setSelectedRegion(regions[0]);
+      setSelectedRegion(regions[0].location_name);
     }
   }, [regions, selectedRegion]);
 

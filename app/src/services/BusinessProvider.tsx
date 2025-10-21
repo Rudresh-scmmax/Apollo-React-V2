@@ -32,7 +32,8 @@ interface BusinessContextType {
   ) => Promise<any[]>;
   getMaterialPrices: (
     selectedMaterial?: string,
-    region?: string
+    location_id?: string,
+    model_name?: string
   ) => Promise<any[]>;
   getRecomendations: (
     selectedMaterial?: string,
@@ -408,12 +409,14 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getMaterialPrices = async (
     selectedMaterial?: string,
-    region?: string
+    location_id?: string,
+    model_name?: string
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
     if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
-    if (region) queryParams.append("region", region);
+    if (location_id) queryParams.append("location_id", location_id);
+    if (model_name) queryParams.append("model_name", model_name);
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`

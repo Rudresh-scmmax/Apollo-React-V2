@@ -738,7 +738,7 @@ const MaterialSheetAntd = () => {
           </h1>
           <div className="flex items-center gap-4">
             <RegionSelector
-              regions={regions?.map(region => region.location_name) || []}
+              regions={regions}
               selectedRegion={selectedRegion}
               setSelectedRegion={(regionName: string) => {
                 setSelectedRegion(regionName);

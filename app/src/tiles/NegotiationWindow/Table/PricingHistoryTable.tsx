@@ -8,7 +8,7 @@ import { RootState } from "../../../store/store";
 import TextArea from "antd/es/input/TextArea";
 
 interface GlycerinePriceChartProps {
-  region: string;
+  locationId: number | null;
 }
 
 interface NewsHighlight {
@@ -23,6 +23,8 @@ interface MaterialPriceHistory {
   capacity_utilization: string;
   conversion_spread: string;
   factors_influencing_demand: NewsHighlight[] | string;
+  demand_summary: string;
+  supply_summary: string;
   demand_outlook: string;
   factors_influencing_supply: NewsHighlight[] | string;
   supply_disruption: string;
@@ -42,7 +44,7 @@ const formStyles = {
 const { Option } = Select;
 
 const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
-  region,
+  locationId,
 }) => {
   const { updateMaterialPriceHistory, getMaterialPriceHistory } =
     useBusinessAPI();
@@ -60,10 +62,10 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
     useState<any>();
 
   const { data: materialPriceHistory, isLoading } = useQuery({
-    queryKey: ["materialPriceHistory", selectedMaterial, region],
+    queryKey: ["materialPriceHistory", selectedMaterial, locationId],
     queryFn: () =>
-      getMaterialPriceHistory(selectedMaterial?.material_id, region),
-    enabled: !!selectedMaterial && !!region,
+      getMaterialPriceHistory(selectedMaterial?.material_id, locationId?.toString(), 24),
+    enabled: !!selectedMaterial && locationId !== null,
   });
 
   useEffect(() => {
@@ -114,11 +116,7 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
     let parsedValue = value;
 
     // Parse JSON input for specific fields
-    if (
-      ["factors_influencing_demand", "factors_influencing_supply"].includes(
-        column
-      )
-    ) {
+    if (["demand_summary", "supply_summary"].includes(column)) {
       try {
         parsedValue = JSON.parse(value);
       } catch (e) {
@@ -150,9 +148,9 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
     ...[
       "capacity_utilization",
       "conversion_spread",
-      "factors_influencing_demand",
+      "demand_summary",
       "demand_outlook",
-      "factors_influencing_supply",
+      "supply_summary",
       "supply_disruption",
       "business_cycle",
       "news_highlight",
@@ -162,241 +160,301 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
       key,
       render: (text: any, record: MaterialPriceHistory) => {
         const isEditing = editingKey === record.id && editingColumn === key;
-        const isLinkField = [
-          "factors_influencing_demand",
-          "factors_influencing_supply",
-        ].includes(key);
+        const isLinkField = ["demand_summary", "supply_summary"].includes(key);
         const isNewsLikeField = [
           "news_highlight",
-          "factors_influencing_demand",
-          "factors_influencing_supply",
+          "demand_summary",
+          "supply_summary",
         ].includes(key);
         // ...existing code...
-const isEditableNewsField = [
-  "factors_influencing_demand",
-  "factors_influencing_supply",
-  "news_highlight",
-].includes(key);
+        const isEditableNewsField = [
+          "demand_summary",
+          "supply_summary",
+          "news_highlight",
+          "capacity_utilization",
+          "conversion_spread",
+          "business_cycle",
+        ].includes(key);
 
-// ...inside the render function for news-like fields...
-if (isNewsLikeField) {
-  let newsData: NewsHighlight[] | string = text;
+        // ...inside the render function for news-like fields...
+        if (isNewsLikeField) {
+          let newsData: NewsHighlight[] | string = text;
 
-  try {
-    newsData = typeof text === "string" ? JSON.parse(text) : text;
-    newsData = Array.isArray(newsData)
-      ? newsData.filter(
-          (item): item is NewsHighlight =>
-            typeof item === "object" &&
-            item !== null &&
-            "title" in item &&
-            "news_url" in item
-        )
-      : newsData[0];
-  } catch (e) {
-    newsData = text;
-  }
+          try {
+            newsData = typeof text === "string" ? JSON.parse(text) : text;
+            newsData = Array.isArray(newsData)
+              ? newsData.filter(
+                  (item): item is NewsHighlight =>
+                    typeof item === "object" &&
+                    item !== null &&
+                    "title" in item &&
+                    "news_url" in item
+                )
+              : newsData[0];
+          } catch (e) {
+            newsData = text;
+          }
 
-  const hasNews =
-    Array.isArray(newsData) &&
-    newsData.length > 0 &&
-    newsData[0] !== null;
+          // Filter to show ONLY news items that have tags (for news_highlight column)
+          if (key === "news_highlight" && Array.isArray(newsData)) {
+            newsData = newsData.filter((newsItem: any) => {
+              // Check if the news item has tags
+              if (
+                newsItem &&
+                typeof newsItem === "object" &&
+                "tags" in newsItem &&
+                Array.isArray(newsItem.tags) &&
+                newsItem.tags.length > 0
+              ) {
+                return true; // Show this news item - it has tags
+              }
+              return false; // Hide this news item - no tags
+            });
+          }
 
-  const content = Array.isArray(newsData) ? (
-    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-      {hasNews
-        ? newsData.map((news, index) => (
+          const hasNews =
+            Array.isArray(newsData) &&
+            newsData.length > 0 &&
+            newsData[0] !== null;
+
+          const content = Array.isArray(newsData) ? (
             <div
-              key={index}
-              style={{ display: "flex", alignItems: "flex-start" }}
+              style={{ display: "flex", flexDirection: "column", gap: "8px" }}
             >
-              <span style={{ marginRight: "8px" }}>•</span>
-              <a
-                href={news?.news_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                style={{
-                  color: "blue",
-                  textDecoration: "underline",
-                  display: "block",
-                  textAlign: "left",
-                  marginRight: "15px",
-                }}
-              >
-                {news?.title}
-              </a>
+              {hasNews ? (
+                newsData.map((news, index) => (
+                  <div
+                    key={index}
+                    style={{ display: "flex", alignItems: "flex-start" }}
+                  >
+                    <span style={{ marginRight: "8px" }}>•</span>
+                    <a
+                      href={news?.news_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{
+                        color: "blue",
+                        textDecoration: "underline",
+                        display: "block",
+                        textAlign: "left",
+                        marginRight: "15px",
+                      }}
+                    >
+                      {news?.title}
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <span style={{ color: "#bbb" }}>[Double click to edit]</span>
+              )}
             </div>
-          ))
-        : <span style={{ color: "#bbb" }}>[Double click to edit]</span>}
-    </div>
-  ) : (
-    text && text !== "" ? (
-      <span>{newsData}</span>
-    ) : (
-      <span style={{ color: "#bbb" }}>[Double click to edit]</span>
-    )
-  );
+          ) : text && text !== "" ? (
+            <span>{newsData}</span>
+          ) : (
+            <span style={{ color: "#bbb" }}>[Double click to edit]</span>
+          );
 
-  if (
-    isEditableNewsField &&
-    editingKey === record.id &&
-    editingColumn === key
-  ) {
-    let raw =
-      editingData[record.id]?.[key as keyof MaterialPriceHistory] ??
-      text ??
-      "";
-    let valueStr = "";
-    if (typeof raw === "string") {
-      valueStr = raw;
-    } else if (typeof raw === "object" && raw !== null) {
-      valueStr = JSON.stringify(raw, null, 2);
-    } else {
-      valueStr = "";
-    }
-    return (
-      <TextArea
-        autoSize={{ minRows: 3 }}
-        value={valueStr}
-        onChange={(e) =>
-          handleInputChange(
-            e.target.value,
-            record.id,
-            key as keyof MaterialPriceHistory
-          )
-        }
-      />
-    );
-  }
-
-  // Optional: tooltip for extra info (news_insights_obj shown only for news_highlight)
-  if (
-    key === "news_highlight" &&
-    record.news_insights_obj &&
-    Object.keys(record.news_insights_obj).length > 0
-  ) {
-    const tooltipContent = (
-      <pre
-        style={{ maxWidth: 500, whiteSpace: "pre-wrap", fontSize: 12 }}
-      >
-        {JSON.stringify(record.news_insights_obj, null, 2)}
-      </pre>
-    );
-    return (
-      <Tooltip placement="left" title={tooltipContent}>
-        <span
-          onDoubleClick={(e) => {
-            if (isEditableNewsField) {
-              e.preventDefault();
-              setEditingKey(record.id);
-              setEditingColumn(key);
+          if (
+            isEditableNewsField &&
+            editingKey === record.id &&
+            editingColumn === key
+          ) {
+            let raw =
+              editingData[record.id]?.[key as keyof MaterialPriceHistory] ??
+              text ??
+              "";
+            let valueStr = "";
+            if (typeof raw === "string") {
+              valueStr = raw;
+            } else if (typeof raw === "object" && raw !== null) {
+              valueStr = JSON.stringify(raw, null, 2);
+            } else {
+              valueStr = "";
             }
-          }}
-          style={{ cursor: isEditableNewsField ? "pointer" : "default" }}
-        >
-          {content}
-        </span>
-      </Tooltip>
-    );
-  }
+            return (
+              <TextArea
+                autoSize={{ minRows: 3 }}
+                value={valueStr}
+                onChange={(e) =>
+                  handleInputChange(
+                    e.target.value,
+                    record.id,
+                    key as keyof MaterialPriceHistory
+                  )
+                }
+              />
+            );
+          }
 
-  return (
-    <span
-      onDoubleClick={(e) => {
-        if (isEditableNewsField) {
-          e.preventDefault();
-          setEditingKey(record.id);
-          setEditingColumn(key);
+          // Optional: tooltip for extra info (show individual news items with their tags)
+          if (
+            key === "news_highlight" &&
+            Array.isArray(newsData) &&
+            newsData.length > 0
+          ) {
+            const tooltipContent = (
+              <div style={{ 
+                maxWidth: 500, 
+                fontSize: 14,
+                color: '#fff',
+                backgroundColor: '#1e293b',
+                padding: 12,
+                borderRadius: 8,
+                border: '1px solid #475569'
+              }}>
+                {newsData.map((newsItem: any, index: number) => (
+                  <div key={index} style={{ 
+                    marginBottom: 12, 
+                    padding: 12, 
+                    backgroundColor: '#334155', 
+                    borderRadius: 6,
+                    border: '1px solid #475569'
+                  }}>
+                    <div style={{ color: '#f1f5f9', marginBottom: 6 }}>
+                      <strong style={{ color: '#60a5fa' }}>Title:</strong> {newsItem.title}
+                    </div>
+                    <div style={{ color: '#f1f5f9', marginBottom: 6 }}>
+                      <strong style={{ color: '#60a5fa' }}>Date:</strong> {newsItem.published_date}
+                    </div>
+                    <div style={{ color: '#f1f5f9', marginBottom: 6 }}>
+                      <strong style={{ color: '#60a5fa' }}>Source:</strong> {newsItem.source}
+                    </div>
+                    {newsItem.tags && newsItem.tags.length > 0 && (
+                      <div style={{ color: '#f1f5f9' }}>
+                        <strong style={{ color: '#5B6E25' }}>Tags:</strong> 
+                        <span style={{ 
+                          color: '#A0BF3F',
+                          fontWeight: 'bold',
+                          marginLeft: 8,
+                          padding: '2px 6px',
+                          backgroundColor: '#4A5A1E',
+                          borderRadius: 4
+                        }}>
+                          {newsItem.tags.join(', ')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+            return (
+              <Tooltip placement="left" title={tooltipContent}>
+                <span
+                  onDoubleClick={(e) => {
+                    if (isEditableNewsField) {
+                      e.preventDefault();
+                      setEditingKey(record.id);
+                      setEditingColumn(key);
+                    }
+                  }}
+                  style={{
+                    cursor: isEditableNewsField ? "pointer" : "default",
+                  }}
+                >
+                  {content}
+                </span>
+              </Tooltip>
+            );
+          }
+
+          return (
+            <span
+              onDoubleClick={(e) => {
+                if (isEditableNewsField) {
+                  e.preventDefault();
+                  setEditingKey(record.id);
+                  setEditingColumn(key);
+                }
+              }}
+              style={{ cursor: isEditableNewsField ? "pointer" : "default" }}
+            >
+              {content}
+            </span>
+          );
         }
-      }}
-      style={{ cursor: isEditableNewsField ? "pointer" : "default" }}
-    >
-      {content}
-    </span>
-  );
-}
 
-// ...for other editable fields (like demand_outlook, supply_disruption)...
-return isEditing ||
-  ["demand_outlook", "supply_disruption"].includes(key) ? (
-  ["demand_outlook", "supply_disruption"].includes(key) ? (
-    <Select
-      value={
-        editingData[record.id]?.[key as keyof MaterialPriceHistory] ||
-        text
-      }
-      onChange={(value) =>
-        handleInputChange(
-          value,
-          record.id,
-          key as keyof MaterialPriceHistory
-        )
-      }
-    >
-      {["Low", "Medium", "High"].map((option) => (
-        <Option key={option} value={option}>
-          {option}
-        </Option>
-      ))}
-    </Select>
-  ) : (
-    <Input
-      value={
-        editingData[record.id]?.[key as keyof MaterialPriceHistory] ||
-        text
-      }
-      onChange={(e) =>
-        handleInputChange(
-          e.target.value,
-          record.id,
-          key as keyof MaterialPriceHistory
-        )
-      }
-      autoFocus
-    />
-  )
-) : (
-  <span
-    onDoubleClick={(e) => {
-      if (
-        key === "demand_outlook" ||
-        key === "supply_disruption" ||
-        isEditableNewsField
-      ) {
-        e.preventDefault();
-        setEditingKey(record.id);
-        setEditingColumn(key);
-      }
-    }}
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: "5px",
-      cursor:
-        key === "demand_outlook" ||
-        key === "supply_disruption" ||
-        isEditableNewsField
-          ? "pointer"
-          : "default",
-      minHeight: 32,
-      color:
-        (text === undefined || text === null || text === "") &&
-        (isEditableNewsField ||
-          key === "demand_outlook" ||
-          key === "supply_disruption")
-          ? "#bbb"
-          : undefined,
-    }}
-  >
-    {text && text !== "" ? (
-      text
-    ) : (
-      <span style={{ color: "#bbb" }}>[Double click to edit]</span>
-    )}
-  </span>
-);
-// ...rest of the file remains unchanged...
+        // ...for other editable fields (like demand_outlook, supply_disruption)...
+        return isEditing ||
+          ["demand_outlook", "supply_disruption"].includes(key) ? (
+          ["demand_outlook", "supply_disruption"].includes(key) ? (
+            <Select
+              value={
+                editingData[record.id]?.[key as keyof MaterialPriceHistory] ||
+                text
+              }
+              onChange={(value) =>
+                handleInputChange(
+                  value,
+                  record.id,
+                  key as keyof MaterialPriceHistory
+                )
+              }
+            >
+              {["Low", "Medium", "High"].map((option) => (
+                <Option key={option} value={option}>
+                  {option}
+                </Option>
+              ))}
+            </Select>
+          ) : (
+            <Input
+              value={
+                editingData[record.id]?.[key as keyof MaterialPriceHistory] ||
+                text
+              }
+              onChange={(e) =>
+                handleInputChange(
+                  e.target.value,
+                  record.id,
+                  key as keyof MaterialPriceHistory
+                )
+              }
+              autoFocus
+            />
+          )
+        ) : (
+          <span
+            onDoubleClick={(e) => {
+              if (
+                key === "demand_outlook" ||
+                key === "supply_disruption" ||
+                isEditableNewsField
+              ) {
+                e.preventDefault();
+                setEditingKey(record.id);
+                setEditingColumn(key);
+              }
+            }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "5px",
+              cursor:
+                key === "demand_outlook" ||
+                key === "supply_disruption" ||
+                isEditableNewsField
+                  ? "pointer"
+                  : "default",
+              minHeight: 32,
+              color:
+                (text === undefined || text === null || text === "") &&
+                (isEditableNewsField ||
+                  key === "demand_outlook" ||
+                  key === "supply_disruption")
+                  ? "#bbb"
+                  : undefined,
+            }}
+          >
+            {text && text !== "" ? (
+              text
+            ) : (
+              <span style={{ color: "#bbb" }}>[Double click to edit]</span>
+            )}
+          </span>
+        );
+        // ...rest of the file remains unchanged...
       },
     })),
   ];

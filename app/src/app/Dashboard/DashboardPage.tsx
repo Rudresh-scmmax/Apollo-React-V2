@@ -444,9 +444,9 @@ const DashboardPage: React.FC = () => {
           className="grid gap-6"
           style={{ gridTemplateColumns: "30% 40% 30%" }}
         >
-          <ProcurementNews materialId={selectedMaterial?.material_id || ""} region="Asia-Pacific" />
-          <PriceChartWithNews materialId={selectedMaterial?.material_id || ""} region="Asia-Pacific" />
-          <VendorWiseActionPlanList materialId={selectedMaterial?.material_id || ""} region="Asia-Pacific" />
+          <ProcurementNews materialId={selectedMaterial?.material_id || ""} locationId={212} />
+          <PriceChartWithNews materialId={selectedMaterial?.material_id || ""} locationId={212} />
+          <VendorWiseActionPlanList materialId={selectedMaterial?.material_id || ""} locationId={212} />
         </div>
 
 

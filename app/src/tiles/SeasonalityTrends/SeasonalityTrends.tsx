@@ -34,7 +34,7 @@ const SeasonalityTrends: React.FC = () => {
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
-  const { data: regions } = useQuery<string[]>({
+  const { data: regions } = useQuery<{location_id: number, location_name: string}[]>({
     queryKey: ["regions", selectedMaterial?.material_id],
     queryFn: () => getRegions(selectedMaterial?.material_id || ""),
     enabled: !!selectedMaterial?.material_id,
@@ -76,7 +76,7 @@ const SeasonalityTrends: React.FC = () => {
 
   useEffect(() => {
     if (regions && regions.length > 0 && !selectedRegion) {
-      setSelectedRegion(regions[0]);
+      setSelectedRegion(regions[0].location_name);
     }
   }, [regions, selectedRegion]);
 

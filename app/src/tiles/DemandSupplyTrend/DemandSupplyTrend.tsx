@@ -104,7 +104,7 @@ const DemandSupplyTrend: React.FC<any> = () => {
           Demand Supply Trend for: {selectedMaterial?.material_description || "All Material"}
         </h1>
         <RegionSelector
-          regions={locations?.map(loc => loc.location_name) || []}
+          regions={locations}
           selectedRegion={locations?.find(loc => loc.location_id === selectedLocationId)?.location_name || ""}
           setSelectedRegion={(locationName: string) => {
             const location = locations?.find(loc => loc.location_name === locationName);

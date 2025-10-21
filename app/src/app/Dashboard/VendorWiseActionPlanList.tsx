@@ -10,10 +10,10 @@ const { Title, Text } = Typography;
 
 interface VendorWiseActionPlanProps {
   materialId: string;
-  region: string;
+  locationId: number;
 }
 
-const VendorWiseActionPlanList: React.FC<VendorWiseActionPlanProps> = ({ materialId, region }) => {
+const VendorWiseActionPlanList: React.FC<VendorWiseActionPlanProps> = ({ materialId, locationId }) => {
   const { getVendorWiseActionPlan } = useBusinessAPI();
   const selectedMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial

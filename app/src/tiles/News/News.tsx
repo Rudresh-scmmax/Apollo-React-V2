@@ -99,7 +99,7 @@ const News: React.FC<any> = () => {
         </h1>
         <div className="flex items-center gap-4">
         <RegionSelector
-          regions={locations?.map(loc => loc.location_name) || []}
+          regions={locations}
           selectedRegion={locations?.find(loc => loc.location_id === selectedLocationId)?.location_name || ""}
           setSelectedRegion={(locationName: string) => {
             const location = locations?.find(loc => loc.location_name === locationName);

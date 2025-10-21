@@ -15,16 +15,16 @@ interface DailyUpdate {
 
 interface ProcurementNewsProps {
   materialId: string;
-  region: string;
+  locationId: number;
 }
 
-const ProcurementNews: React.FC<ProcurementNewsProps> = ({ materialId, region }) => {
+const ProcurementNews: React.FC<ProcurementNewsProps> = ({ materialId, locationId }) => {
   const { getDailyUpdate } = useBusinessAPI();
 
   const { data: dailyUpdates, isLoading: isLoadingDailyUpdates } = useQuery<DailyUpdate[]>({
-    queryKey: ["dailyUpdates", materialId, region],
-    queryFn: () => getDailyUpdate(materialId, region),
-    enabled: !!materialId && !!region,
+    queryKey: ["dailyUpdates", materialId, locationId],
+    queryFn: () => getDailyUpdate(materialId, locationId.toString()),
+    enabled: !!materialId && !!locationId,
   });
 
   return (
