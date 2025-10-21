@@ -141,6 +141,9 @@ interface BusinessContextType {
   getAllUsers: () => Promise<any>;
   updatePlanAssignments: (planId: number, assignedUsers: string[]) => Promise<any>;
   deleteTakeaway: (id: number) => Promise<any>;
+  getUserPreferences: () => Promise<{user_prefered_currency: string}>;
+  updateUserPreferences: (preferences: {user_prefered_currency: string}) => Promise<any>;
+  getCurrencyMaster: () => Promise<{currency_code: string, currency_name: string}[]>;
 };
 
 
@@ -965,6 +968,28 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     );
   };
 
+  const getUserPreferences = async (): Promise<{user_prefered_currency: string}> => {
+    return fetchWrapper(`${businessApiUrl}/user-preferences`, {
+      method: "GET",
+    });
+  };
+
+  const updateUserPreferences = async (preferences: {user_prefered_currency: string}): Promise<any> => {
+    return fetchWrapper(`${businessApiUrl}/user-preferences`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(preferences),
+    });
+  };
+
+  const getCurrencyMaster = async (): Promise<{currency_code: string, currency_name: string}[]> => {
+    return fetchWrapper(`${businessApiUrl}/currency-master`, {
+      method: "GET",
+    });
+  };
+
   const getPortersAnalysis = async (materalId: string): Promise<any> => {
     const queryParams = new URLSearchParams();
     queryParams.append("material_id", materalId);
@@ -1279,6 +1304,9 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     updatePlanAssignments,
     deleteTakeaway,
     refreshPortersAnalysis,
+    getUserPreferences,
+    updateUserPreferences,
+    getCurrencyMaster,
   };
 
   return (

@@ -52,6 +52,7 @@ import PriceBenchmarking from "./tiles/PriceBenchmarking/PriceBenchmarking";
 import IndustryPorterAnalysis from "./tiles/IndustryPorterAnalysis/IndustryPorterAnalysis";
 import SeasonalityTrends from "./tiles/SeasonalityTrends/SeasonalityTrends";
 import NegotiationObjectives from "./tiles/NegotiationObjectives/NegotiationObjectives";
+import UserPreferencesPage from "./components/UserPreference";
 
 
 
@@ -105,17 +106,19 @@ const AppRoutes: React.FC = () => {
         {/* <Route path="/costsheet" element={<CostSheet/>} /> */}
         <Route path="/costsheet" element={<MaterialSheet />} />
         <Route path="/key-value-drivers" element={<KeyValueDrivers />} />
-        <Route path="/spend-analytics" element={<SpendAnalytics/>} />
+        <Route path="/spend-analytics" element={<SpendAnalytics />} />
         <Route path="/inventory-levels" element={<InventoryLevel />} />
         <Route path="/vendor-wise-action-plan" element={<VendorWiseActionPlan />} />
         <Route path="/vendor-key-info" element={<VendorKeyInformation />} />
         <Route path="/fact-pack" element={<FactPack />} />
         <Route path="/quotation-comparison" element={<QuotationComparison />} />
-        <Route path="/trade-data-analysis" element={<TradeDataAnalysis/>} />
+        <Route path="/trade-data-analysis" element={<TradeDataAnalysis />} />
         <Route path="/price-benchmarking" element={<PriceBenchmarking />} />
         <Route path="/industry-porter-analysis" element={<IndustryPorterAnalysis />} />
         <Route path="/seasonality-trends" element={<SeasonalityTrends />} />
         <Route path="/negotiation-objectives" element={<NegotiationObjectives />} />
+        <Route path="/preferences" element={<UserPreferencesPage />} />
+
       </Route>
 
       {/* TEMPORARY FOR DEMO */}

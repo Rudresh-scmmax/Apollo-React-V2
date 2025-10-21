@@ -1,7 +1,13 @@
 import React from "react";
 import { PrinterOutlined } from "@ant-design/icons";
 import { Button  } from "antd";
+import MaterialSelect from "../../common/MaterialSelect";
 
+
+interface SelectedMaterial {
+  material_id: string;
+  material_description: string;
+}
 
 interface Props {
   selectedMaterial: SelectedMaterial | null;
@@ -19,23 +25,12 @@ const NegotiationHeader: React.FC<Props> = ({
       Negotiation Objectives: {selectedMaterial?.material_description}
     </h1>
     <div className="flex items-center gap-4">
-      <select
-        className="border border-gray-300 rounded-lg px-4 py-2 bg-white"
-        value={selectedMaterial?.material_id}
-        onChange={(e) => {
-          const selected = materials.find(
-            (material) => material.material_id === e.target.value
-          );
-          onMaterialChange(selected ?? null);
-        }}
-      >
-        <option value="All Material">All Material</option>
-        {materials?.map((material, idx) => (
-          <option key={idx} value={material.material_id}>
-            {material.material_description}
-          </option>
-        ))}
-      </select>
+      <MaterialSelect
+        materials={materials}
+        selectedMaterial={selectedMaterial}
+        onSelect={onMaterialChange}
+        placeholder="Select Material"
+      />
       <div className="flex items-center gap-2">
         <Button
           icon={<PrinterOutlined />}

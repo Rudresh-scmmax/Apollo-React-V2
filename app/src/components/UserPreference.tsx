@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaSave, FaCheck } from 'react-icons/fa';
+import { useBusinessAPI } from '../services/BusinessProvider';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface UserPreferences {
   material: string;
@@ -10,6 +12,9 @@ interface UserPreferences {
 }
 
 const UserPreferencesPage: React.FC = () => {
+  const { getUserPreferences, updateUserPreferences, getCurrencyMaster } = useBusinessAPI();
+  const queryClient = useQueryClient();
+  
   const [preferences, setPreferences] = useState<UserPreferences>({
     material: 'glycerine',
     region: 'north-america',
@@ -18,6 +23,41 @@ const UserPreferencesPage: React.FC = () => {
   });
 
   const [isSaved, setIsSaved] = useState(false);
+
+  // Fetch user preferences
+  const { data: userPrefs, isLoading } = useQuery({
+    queryKey: ['userPreferences'],
+    queryFn: getUserPreferences,
+  });
+
+  // Fetch currencies from API
+  const { data: currencies, isLoading: currenciesLoading } = useQuery({
+    queryKey: ['currencyMaster'],
+    queryFn: getCurrencyMaster,
+  });
+
+  // Update preferences when API data loads
+  useEffect(() => {
+    if (userPrefs?.user_prefered_currency) {
+      setPreferences(prev => ({
+        ...prev,
+        currency: userPrefs.user_prefered_currency
+      }));
+    }
+  }, [userPrefs]);
+
+  // Update preferences mutation
+  const updatePreferencesMutation = useMutation({
+    mutationFn: updateUserPreferences,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 3000);
+    },
+    onError: (error) => {
+      console.error('Failed to save preferences:', error);
+    }
+  });
 
   const materials = [
     { value: 'glycerine', label: 'Glycerine' },
@@ -37,16 +77,11 @@ const UserPreferencesPage: React.FC = () => {
     { value: 'oceania', label: 'Oceania' },
   ];
 
-  const currencies = [
-    { value: 'USD', label: 'USD - US Dollar' },
-    { value: 'EUR', label: 'EUR - Euro' },
-    { value: 'GBP', label: 'GBP - British Pound' },
-    { value: 'JPY', label: 'JPY - Japanese Yen' },
-    { value: 'CNY', label: 'CNY - Chinese Yuan' },
-    { value: 'INR', label: 'INR - Indian Rupee' },
-    { value: 'AUD', label: 'AUD - Australian Dollar' },
-    { value: 'CAD', label: 'CAD - Canadian Dollar' },
-  ];
+  // Transform API currencies to component format
+  const currencyOptions = currencies?.map(currency => ({
+    value: currency.currency_code,
+    label: `${currency.currency_code} - ${currency.currency_name}`
+  })) || [];
 
   const negotiationStyles = [
     {
@@ -72,10 +107,9 @@ const UserPreferencesPage: React.FC = () => {
   };
 
   const handleSave = () => {
-    // Place save logic here (API call, localStorage, etc.)
-    console.log('Saving preferences:', preferences);
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 3000);
+    updatePreferencesMutation.mutate({
+      user_prefered_currency: preferences.currency
+    });
   };
 
   return (
@@ -85,6 +119,9 @@ const UserPreferencesPage: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">User Preferences</h1>
           <p className="text-gray-600">Customize your trading and negotiation settings</p>
+          {(isLoading || currenciesLoading) && (
+            <div className="text-sm text-blue-600 mt-2">Loading preferences...</div>
+          )}
         </div>
 
         {/* Preferences Card */}
@@ -128,13 +165,18 @@ const UserPreferencesPage: React.FC = () => {
               <select
                 value={preferences.currency}
                 onChange={(e) => handleChange('currency', e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#a0bf3f] focus:border-transparent transition-all outline-none"
+                disabled={currenciesLoading}
+                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#a0bf3f] focus:border-transparent transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {currencies.map((currency) => (
-                  <option key={currency.value} value={currency.value}>
-                    {currency.label}
-                  </option>
-                ))}
+                {currenciesLoading ? (
+                  <option>Loading currencies...</option>
+                ) : (
+                  currencyOptions.map((currency) => (
+                    <option key={currency.value} value={currency.value}>
+                      {currency.label}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
 
@@ -175,9 +217,12 @@ const UserPreferencesPage: React.FC = () => {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={handleSave}
+                disabled={updatePreferencesMutation.isPending}
                 className={`w-full py-3 px-6 rounded-lg font-semibold text-white transition-all shadow-md ${
                   isSaved
                     ? 'bg-green-600 hover:bg-green-700'
+                    : updatePreferencesMutation.isPending
+                    ? 'bg-gray-400 cursor-not-allowed'
                     : 'bg-gradient-to-r from-[#a0bf3f] to-[#8bad34] hover:from-[#8bad34] hover:to-[#799d2a]'
                 }`}
               >
@@ -185,6 +230,11 @@ const UserPreferencesPage: React.FC = () => {
                   {isSaved ? (
                     <>
                       <FaCheck className="mr-2" /> Preferences Saved!
+                    </>
+                  ) : updatePreferencesMutation.isPending ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Saving...
                     </>
                   ) : (
                     <>
