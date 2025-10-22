@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -26,13 +26,14 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
   locationId,
   model,
 }) => {
-  const { getMaterialPrices, getRecomendations, triggerForecast } =
+  const { getMaterialPrices, getLatestNews, getKeyMetrics, triggerForecast } =
     useBusinessAPI();
   const selectedMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
   const queryClient = useQueryClient();
+  const [isTriggering, setIsTriggering] = useState(false);
 
   const { data: materialPriceHistory } = useQuery({
     queryKey: ["materialPrices", selectedMaterial, locationId, model],
@@ -40,17 +41,32 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
     enabled: !!selectedMaterial && locationId !== null,
   });
 
-  const { data: recomendations } = useQuery<StrategyRecommendation>({
-    queryKey: ["recomendations", selectedMaterial, locationId, model],
-    queryFn: () => getRecomendations(selectedMaterial?.material_id, locationId?.toString(), model),
+  const { data: latestNews } = useQuery<{ latest_news_title: string }>({
+    queryKey: ["latestNews", selectedMaterial, locationId],
+    queryFn: () => getLatestNews(selectedMaterial?.material_id, locationId?.toString()),
+    enabled: !!selectedMaterial && locationId !== null,
+  });
+
+  const { data: keyMetrics } = useQuery<{
+    current_price: string;
+    price_change_from_month: string;
+    ytd_change: string;
+    volatility_6m: string;
+    conversion_spread: string;
+    conversion_change_from_month: string;
+  }>({
+    queryKey: ["keyMetrics", selectedMaterial, locationId],
+    queryFn: () => getKeyMetrics(selectedMaterial?.material_id, locationId?.toString()),
     enabled: !!selectedMaterial && locationId !== null,
   });
 
   const handleTriggerForecast = async () => {
+    setIsTriggering(true);
     try {
       const response = await triggerForecast(
         selectedMaterial?.material_id || "",
-        locationId?.toString() || ""
+        locationId?.toString() || "",
+        model || ""
       );
       message.success("Forecast triggered successfully");
       console.log("Forecast response:", response);
@@ -61,6 +77,8 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
     } catch (error) {
       console.error("Failed to trigger forecast", error);
       message.error("Failed to trigger forecast");
+    } finally {
+      setIsTriggering(false);
     }
   };
 
@@ -254,28 +272,28 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
   };
 
   // const latestData = historicalData[historicalData.length - 1] || {};
-  const currentPrice = recomendations?.key_metrics?.current_price
-    ? `$${recomendations?.key_metrics?.current_price}`
+  const currentPrice = keyMetrics?.current_price
+    ? `$${keyMetrics?.current_price}`
     : "--";
 
-  const priceChange = recomendations?.key_metrics?.price_change_from_month
-    ? `${recomendations?.key_metrics?.price_change_from_month}%`
+  const priceChange = keyMetrics?.price_change_from_month
+    ? `${keyMetrics?.price_change_from_month}%`
     : "--";
 
-  const volatility = recomendations?.key_metrics?.volatility_6m
-    ? `${recomendations?.key_metrics?.volatility_6m}%`
+  const volatility = keyMetrics?.volatility_6m
+    ? `${keyMetrics?.volatility_6m}%`
     : "--";
 
-  const conversionSpread = recomendations?.key_metrics?.conversion_spread
-    ? `$${recomendations?.key_metrics?.conversion_spread}`
+  const conversionSpread = keyMetrics?.conversion_spread
+    ? `$${keyMetrics?.conversion_spread}`
     : "--";
 
-  const ytdChange = recomendations?.key_metrics?.ytd_change
-    ? `${recomendations?.key_metrics?.ytd_change}%`
+  const ytdChange = keyMetrics?.ytd_change
+    ? `${keyMetrics?.ytd_change}%`
     : "--";
 
   const conversionChangeText = `${
-    recomendations?.key_metrics?.conversion_change_from_month
+    keyMetrics?.conversion_change_from_month
   }% from ${getLastMonth()}`;
 
   const allValues = series.flatMap((s) => s.data).filter((v) => v != null);
@@ -428,20 +446,28 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
           alignItems: "center",
         }}
       >
-        <div style={{ flex: 1 }}>{recomendations?.latest_news_title}</div>
+        <div style={{ flex: 1 }}>{latestNews?.latest_news_title}</div>
         <button
           onClick={handleTriggerForecast}
+          disabled={isTriggering}
           style={{
-            backgroundColor: "#1890ff",
+            backgroundColor: isTriggering ? "#ccc" : "#a0bf3f",
+            borderColor: isTriggering ? "#ccc" : "#a0bf3f",
             color: "white",
             border: "none",
             borderRadius: "4px",
-            padding: "8px 16px",
-            cursor: "pointer",
+            fontSize: "16px",
+            height: "40px",
+            paddingLeft: "30px",
+            paddingRight: "30px",
+            cursor: isTriggering ? "not-allowed" : "pointer",
             marginLeft: "20px",
+            opacity: isTriggering ? 0.7 : 1,
           }}
         >
-          Trigger Forecast
+          <span style={{ color: "white" }}>
+            {isTriggering ? "Triggering..." : "Trigger Forecast"}
+          </span>
         </button>
       </div>
 

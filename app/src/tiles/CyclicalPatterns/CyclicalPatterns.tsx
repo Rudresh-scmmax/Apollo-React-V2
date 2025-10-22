@@ -18,7 +18,7 @@ const CyclicalPatterns: React.FC = () => {
   );
 
   const [showSettings, setShowSettings] = useState(false);
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
 
   const { data: regions } = useQuery<{location_id: number, location_name: string}[]>({
     queryKey: ["regions", selectedMaterial?.material_id],
@@ -30,14 +30,14 @@ const CyclicalPatterns: React.FC = () => {
     queryKey: [
       "historicalPrices",
       selectedMaterial?.material_id,
-      selectedRegion,
+      selectedLocationId,
     ],
     queryFn: () =>
       getHistoricalPrices(
         selectedMaterial?.material_id || "",
-        selectedRegion
+        selectedLocationId?.toString() || ""
       ),
-    enabled: !!selectedMaterial?.material_id && !!selectedRegion,
+    enabled: !!selectedMaterial?.material_id && selectedLocationId !== null,
   });
 
   useEffect(() => {
@@ -47,10 +47,10 @@ const CyclicalPatterns: React.FC = () => {
   }, [selectedMaterial, navigate]);
 
   useEffect(() => {
-    if (regions && regions.length > 0 && !selectedRegion) {
-      setSelectedRegion(regions[0].location_name);
+    if (regions && regions.length > 0 && selectedLocationId === null) {
+      setSelectedLocationId(regions[0].location_id);
     }
-  }, [regions, selectedRegion]);
+  }, [regions, selectedLocationId]);
 
   return (
     <div className="container mx-auto p-6">
@@ -62,8 +62,13 @@ const CyclicalPatterns: React.FC = () => {
         <div className="flex items-center gap-4">
           <RegionSelector
             regions={regions}
-            selectedRegion={selectedRegion}
-            setSelectedRegion={setSelectedRegion}
+            selectedRegion={regions?.find(loc => loc.location_id === selectedLocationId)?.location_name || ""}
+            setSelectedRegion={(locationName: string) => {
+              const location = regions?.find(loc => loc.location_name === locationName);
+              if (location) {
+                setSelectedLocationId(location.location_id);
+              }
+            }}
           />
 
           <button
@@ -77,7 +82,7 @@ const CyclicalPatterns: React.FC = () => {
       {showSettings && <UploadSettings />}
       <div className="flex bg-white rounded-xl shadow p-8">
         <div className="flex-1">
-          {selectedMaterial && selectedRegion && (
+          {selectedMaterial && selectedLocationId !== null && (
             <HistoricalPriceChart
               priceHistory={priceHistory}
               isLoading={isPriceLoading}

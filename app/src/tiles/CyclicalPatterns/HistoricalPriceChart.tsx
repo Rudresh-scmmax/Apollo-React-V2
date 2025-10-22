@@ -77,10 +77,25 @@ const HistoricalPriceChart: React.FC<HistoricalPriceChartProps> = ({
   const dynamicMax = Math.ceil(maxValue + buffer);
 
   const dataLength = aggregatedData.length;
-  const maxLabels = 8;
-  const labelInterval =
-    dataLength > maxLabels ? Math.ceil(dataLength / maxLabels) : 1;
-  const interval = labelInterval;
+  
+  // Dynamic label calculation based on data length
+  let maxLabels, interval;
+  if (dataLength <= 12) {
+    maxLabels = dataLength; // Show all labels for small datasets
+    interval = 1;
+  } else if (dataLength <= 24) {
+    maxLabels = 8; // Show 8 labels for medium datasets
+    interval = Math.ceil(dataLength / maxLabels);
+  } else if (dataLength <= 36) {
+    maxLabels = 6; // Show 6 labels for larger datasets
+    interval = Math.ceil(dataLength / maxLabels);
+  } else if (dataLength <= 60) {
+    maxLabels = 4; // Show 4 labels for very large datasets
+    interval = Math.ceil(dataLength / maxLabels);
+  } else {
+    maxLabels = 3; // Show only 3 labels for extremely large datasets
+    interval = Math.ceil(dataLength / maxLabels);
+  }
 
   const options: ApexOptions = {
     chart: {
@@ -101,17 +116,35 @@ const HistoricalPriceChart: React.FC<HistoricalPriceChartProps> = ({
       categories: aggregatedData.map((item) => item.x),
       tickPlacement: "on",
       labels: {
-        rotate: -45,
-        hideOverlappingLabels: false,
+        rotate: dataLength > 24 ? -45 : 0, // Rotate labels only for large datasets
+        hideOverlappingLabels: true,
         showDuplicates: false,
         trim: false,
-        style: { colors: "#666", fontSize: "12px" },
+        style: { 
+          colors: "#666", 
+          fontSize: dataLength > 60 ? "9px" : dataLength > 36 ? "10px" : "12px" // Progressive font size reduction
+        },
         formatter: function (value: string, index: number, opts: any) {
           const categories = opts?.categories || [];
           const total = categories.length;
-          if (total <= 8) return value;
+          
+          // Always show first and last labels
           if (index === 0 || index === total - 1) return value;
+          
+          // For small datasets, show all labels
+          if (total <= 12) return value;
+          
+          // For very large datasets (>60), be more aggressive
+          if (total > 60) {
+            // Show only every nth label where n is larger
+            const aggressiveInterval = Math.ceil(total / 3);
+            if (index % aggressiveInterval === 0) return value;
+            return "";
+          }
+          
+          // For larger datasets, use dynamic interval
           if (interval > 1 && index % interval === 0) return value;
+          
           return "";
         },
       },

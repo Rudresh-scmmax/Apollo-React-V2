@@ -129,7 +129,18 @@ const DashboardPage: React.FC = () => {
     checkPDFStatus,
   } = useBusinessAPI();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
-    getGlobalSetMaterial || { material_description: "Glycerine", material_id: "M0003" }
+    getGlobalSetMaterial || { 
+      material_id: "100724-000000",
+      material_description: "Glycerine",
+      material_type_id: 1,
+      material_status: "active",
+      base_uom_id: 4,
+      user_defined_material_desc: null,
+      material_category: "Category - D",
+      cas_no: null,
+      unspsc_code: null,
+      hsn_code: null
+    }
   );
   console.log("selectedMaterial", selectedMaterial)
   const [showAddOptions, setShowAddOptions] = useState(false);

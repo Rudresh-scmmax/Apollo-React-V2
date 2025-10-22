@@ -3,6 +3,14 @@ import React, { useState, useRef, useEffect } from "react";
 interface Material {
   material_id: string;
   material_description: string;
+  material_type_id: number;
+  material_status: string;
+  base_uom_id: number;
+  user_defined_material_desc: string | null;
+  material_category: string;
+  cas_no: string | null;
+  unspsc_code: string | null;
+  hsn_code: string | null;
 }
 
 interface MaterialSelectProps {

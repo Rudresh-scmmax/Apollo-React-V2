@@ -4,8 +4,16 @@ import { useAuth } from "../auth/AuthProvider";
 const businessApiUrl = (import.meta as any).env.VITE_BUSINESS_API_URL;
 
 export type Material = {
-  material_description: string;
   material_id: string;
+  material_description: string;
+  material_type_id: number;
+  material_status: string;
+  base_uom_id: number;
+  user_defined_material_desc: string | null;
+  material_category: string;
+  cas_no: string | null;
+  unspsc_code: string | null;
+  hsn_code: string | null;
 };
 
 export type Tile = {
@@ -23,7 +31,7 @@ interface BusinessContextType {
   checkTiles: () => Promise<Tile[]>;
   getMaterialPriceHistory: (
     selectedMaterial?: string,
-    region?: string, limit?: number
+    location_id?: string, limit?: number
   ) => Promise<any[]>;
   updateMaterialPriceHistory: (
     id?: number,
@@ -37,8 +45,23 @@ interface BusinessContextType {
   ) => Promise<any[]>;
   getRecomendations: (
     selectedMaterial?: string,
-    region?: string
+    location_id?: string
   ) => Promise<StrategyRecommendation>;
+  getLatestNews: (
+    material_id?: string,
+    location_id?: string
+  ) => Promise<{ latest_news_title: string }>;
+  getKeyMetrics: (
+    material_id?: string,
+    location_id?: string
+  ) => Promise<{
+    current_price: string;
+    price_change_from_month: string;
+    ytd_change: string;
+    volatility_6m: string;
+    conversion_spread: string;
+    conversion_change_from_month: string;
+  }>;
   toggleTile: (tile: string, active: boolean) => Promise<void>;
   uploadPriceHistory: (file: File) => Promise<any>;
   uploadNewsHighlight: (file: File, material_id: string) => Promise<any>;
@@ -59,7 +82,7 @@ interface BusinessContextType {
     selectedMaterial?: string,
     region?: string
   ) => Promise<any[]>;
-  getHistoricalPrices: (materalId: string, region: string) => Promise<any>;
+  getHistoricalPrices: (materalId: string, location_id: string) => Promise<any>;
   getProcurementPlan: (
     PlantCode?: string,
     selectedMaterial?: string
@@ -123,7 +146,7 @@ interface BusinessContextType {
   createNegotiationObjectives: (vendor_name: string, date: string, objectives: NegotiationData, material_id: string) => Promise<any>;
   getNegotiationAvoids: (vendor: string, date: string, material_id?: string, signals?: any) => Promise<any>;
   uploadSpendAnalysis: (file: File) => Promise<any>;
-  triggerForecast: (material_id: string, region: string) => Promise<any>;
+  triggerForecast: (material_id: string, location_id: string, model_name: string) => Promise<any>;
   getTargetNegotiation: (material_id: string, date: string, vendor_name: string) => Promise<any>;
   getTcoPrices: (vendor_name: string, date: string) => Promise<any>;
   getShouldBePrice: (material_id: string, date: string) => Promise<any>;
@@ -157,27 +180,26 @@ interface BusinessProviderProps {
 }
 
 export type StrategyRecommendation = {
-  recommendation: {
-    strategies: {
-      conservative: string;
-      aggressive: string;
-      balanced: string;
-    };
-    generated_at: string;
-    recommendation: string;
-  };
-  material: string;
-
+  id: number;
+  material_id: string;
+  location_id: number;
+  material_name: string;
+  recommendation: string;
+  conservative_strategy: string;
+  balanced_strategy: string;
+  aggressive_strategy: string;
+  generated_at: string;
+  created_at: string;
+  updated_at: string;
+  latest_news_title: string;
   key_metrics: {
-    conversion_change_from_month: string;
-    conversion_spread: string;
     current_price: string;
     price_change_from_month: string;
-    volatility_6m: string;
     ytd_change: string;
+    volatility_6m: string;
+    conversion_spread: string;
+    conversion_change_from_month: string;
   };
-
-  latest_news_title: string;
 };
 
 export const BusinessProvider: React.FC<BusinessProviderProps> = ({
@@ -358,13 +380,13 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getMaterialPriceHistory = async (
     selectedMaterial?: string,
-    region?: string,
+    location_id?: string,
     limit?: number
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
     if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
-    if (region) queryParams.append("region", region);
+    if (location_id) queryParams.append("location_id", location_id);
     if (limit) queryParams.append("limit", limit.toString());
 
 
@@ -429,18 +451,61 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getRecomendations = async (
     selectedMaterial?: string,
-    region?: string
+    location_id?: string
   ): Promise<StrategyRecommendation> => {
     const queryParams = new URLSearchParams();
 
     if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
-    if (region) queryParams.append("region", region);
+    if (location_id) queryParams.append("location_id", location_id);
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
       : "";
 
     return fetchWrapper(`${businessApiUrl}/get-recommendation${queryString}`, {
+      method: "GET",
+    });
+  };
+
+  const getLatestNews = async (
+    material_id?: string,
+    location_id?: string
+  ): Promise<{ latest_news_title: string }> => {
+    const queryParams = new URLSearchParams();
+
+    if (material_id) queryParams.append("material_id", material_id);
+    if (location_id) queryParams.append("location_id", location_id);
+
+    const queryString = queryParams.toString()
+      ? `?${queryParams.toString()}`
+      : "";
+
+    return fetchWrapper(`${businessApiUrl}/latest-news${queryString}`, {
+      method: "GET",
+    });
+  };
+
+  const getKeyMetrics = async (
+    material_id?: string,
+    location_id?: string
+  ): Promise<{
+    current_price: string;
+    price_change_from_month: string;
+    ytd_change: string;
+    volatility_6m: string;
+    conversion_spread: string;
+    conversion_change_from_month: string;
+  }> => {
+    const queryParams = new URLSearchParams();
+
+    if (material_id) queryParams.append("material_id", material_id);
+    if (location_id) queryParams.append("location_id", location_id);
+
+    const queryString = queryParams.toString()
+      ? `?${queryParams.toString()}`
+      : "";
+
+    return fetchWrapper(`${businessApiUrl}/key-metrics${queryString}`, {
       method: "GET",
     });
   };
@@ -582,11 +647,12 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getHistoricalPrices = async (
     materalId: string,
-    region: string
+    location_id: string
   ): Promise<any> => {
     const queryParams = new URLSearchParams();
     queryParams.append("material_id", materalId);
-    queryParams.append("region", region);
+    queryParams.append("location_id", location_id);
+    queryParams.append("limit", "24");
 
     return fetchWrapper(
       `${businessApiUrl}/historical-prices?${queryParams.toString()}`,
@@ -1105,14 +1171,16 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const triggerForecast = async (
     material_id: string,
-    region: string
+    location_id: string,
+    model_name: string
   ): Promise<any> => {
-    return fetchWrapper(`${businessApiUrl}/trigger-forecast`, {
+    const queryParams = new URLSearchParams();
+    queryParams.append("material_id", material_id);
+    queryParams.append("location_id", location_id);
+    queryParams.append("model_name", model_name);
+
+    return fetchWrapper(`${businessApiUrl}/trigger-forecast-update?${queryParams.toString()}`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ material_id, region }),
     });
   };
 
@@ -1245,6 +1313,8 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     getNewsLocations,
     getDemandSupplyLocations,
     getRecomendations,
+    getLatestNews,
+    getKeyMetrics,
     uploadPriceHistory,
     updateTakeaway,
     getDemandSupplyTrends,
