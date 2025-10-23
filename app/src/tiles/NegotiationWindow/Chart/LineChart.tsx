@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,14 +17,17 @@ interface DataPoint {
   news?: string;
 }
 
+
 interface GlycerinePriceChartProps {
   locationId: number | null;
   model: string;
+  onModelChange?: (modelName: string) => void;
 }
 
 const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
   locationId,
   model,
+  onModelChange,
 }) => {
   const { getMaterialPrices, getLatestNews, getKeyMetrics, triggerForecast } =
     useBusinessAPI();
@@ -35,7 +38,7 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
   const queryClient = useQueryClient();
   const [isTriggering, setIsTriggering] = useState(false);
 
-  const { data: materialPriceHistory } = useQuery({
+  const { data: materialPriceHistory } = useQuery<MaterialPriceResponse>({
     queryKey: ["materialPrices", selectedMaterial, locationId, model],
     queryFn: () => getMaterialPrices(selectedMaterial?.material_id, locationId?.toString(), model),
     enabled: !!selectedMaterial && locationId !== null,
@@ -84,7 +87,7 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
 
   // Sort data by date to ensure correct ordering
   const sortedData =
-    materialPriceHistory?.slice().sort((a, b) => {
+    materialPriceHistory?.data?.slice().sort((a: MaterialPriceItem, b: MaterialPriceItem) => {
       const parseDate = (dateStr: string) => {
         const [month, year] = dateStr.split(" ");
         const monthMap: { [key: string]: number } = {
@@ -113,37 +116,22 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
   const averageData: DataPoint[] = [];
   console.log("sortedData: ", sortedData);
   // Process each data point
-  sortedData.forEach((item) => {
+  sortedData.forEach((item: MaterialPriceItem) => {
     if (item.price) {
+      // Historical data
       historicalData.push({
         x: item.month,
         y: parseFloat(item.price),
-        news: Array.isArray(item.news)
-          ? item.news.map((n: any) => `• ${n.title}`).join("<br/>")
-          : item.news?.title
-          ? `• ${item.news.title}`
+        news: Array.isArray(item.news) && item.news.length > 0
+          ? item.news.map((n) => `• ${n.title}`).join("<br/>")
           : "No news available",
       });
-    } else {
-      // Process forecast data
-      if (item.short_forecast) {
-        shortTermData.push({
-          x: item.month,
-          y: parseFloat(item.short_forecast),
-        });
-      }
-      if (item.long_forecast) {
-        longTermData.push({
-          x: item.month,
-          y: parseFloat(item.long_forecast),
-        });
-      }
-      if (item.forecast_value) {
-        averageData.push({
-          x: item.month,
-          y: parseFloat(item.forecast_value),
-        });
-      }
+    } else if (item.forecast_value) {
+      // Forecast data
+      averageData.push({
+        x: item.month,
+        y: parseFloat(item.forecast_value),
+      });
     }
   });
 
@@ -295,6 +283,16 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
   const conversionChangeText = `${
     keyMetrics?.conversion_change_from_month
   }% from ${getLastMonth()}`;
+
+  // Get model name from API response
+  const modelName = materialPriceHistory?.model_name || "Unknown";
+
+  // Update parent component when model name changes
+  useEffect(() => {
+    if (modelName && modelName !== "Unknown" && onModelChange) {
+      onModelChange(modelName);
+    }
+  }, [modelName, onModelChange]);
 
   const allValues = series.flatMap((s) => s.data).filter((v) => v != null);
 
@@ -480,6 +478,9 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
         }}
       >
         <div style={{ flex: "0 1 65%" }}>
+          <div style={{ marginBottom: "10px", fontSize: "14px", color: "#666" }}>
+            <strong>Model:</strong> {modelName}
+          </div>
           <Chart options={options} series={series} type="line" height={400} />
           <div style={{ fontSize: "12px", color: "#666", marginTop: "10px" }}>
             Note: Select a data point to view specific remarks and insights.

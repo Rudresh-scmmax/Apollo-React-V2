@@ -38,11 +38,14 @@ interface BusinessContextType {
     field?: string,
     value?: string
   ) => Promise<any[]>;
+  updateMaterialPriceHistoryBulk: (
+    request: MaterialPriceHistoryUpdateRequest
+  ) => Promise<MaterialPriceHistoryUpdateResponse>;
   getMaterialPrices: (
     selectedMaterial?: string,
     location_id?: string,
     model_name?: string
-  ) => Promise<any[]>;
+  ) => Promise<MaterialPriceResponse>;
   getRecomendations: (
     selectedMaterial?: string,
     location_id?: string
@@ -201,6 +204,7 @@ export type StrategyRecommendation = {
     conversion_change_from_month: string;
   };
 };
+
 
 export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   children,
@@ -416,6 +420,18 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
+  const updateMaterialPriceHistoryBulk = async (
+    request: MaterialPriceHistoryUpdateRequest
+  ): Promise<MaterialPriceHistoryUpdateResponse> => {
+    return fetchWrapper(`${businessApiUrl}/update-material-price-history`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+  };
+
   const updateTakeaway = async (
     id?: number,
     takeaway?: string
@@ -433,7 +449,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     selectedMaterial?: string,
     location_id?: string,
     model_name?: string
-  ): Promise<any[]> => {
+  ): Promise<MaterialPriceResponse> => {
     const queryParams = new URLSearchParams();
 
     if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
@@ -1308,6 +1324,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     toggleTile,
     getMaterialPriceHistory,
     updateMaterialPriceHistory,
+    updateMaterialPriceHistoryBulk,
     getMaterialPrices,
     getRegions,
     getNewsLocations,

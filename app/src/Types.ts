@@ -136,3 +136,59 @@ interface NegotiationObjectivesResponse {
   date: string;
   objectives: NegotiationData;
 }
+
+interface MaterialPriceItem {
+  month: string;
+  price: string | null;
+  news: Array<{
+    title: string;
+    source: string;
+    news_url: string;
+    published_date: string;
+    tags: string[] | null;
+  }>;
+  forecast_value: string | null;
+  dt: string;
+}
+
+interface MaterialPriceResponse {
+  model_name: string;
+  data: MaterialPriceItem[];
+}
+
+// New interfaces for bulk material price history update
+interface NewsInsight {
+  title: string;
+  source: string;
+  source_link: string;
+  published_date: string;
+  news_tag: string;
+  sentiment?: string;
+  impact_score?: number;
+  relevance_score?: number;
+}
+
+interface DemandSupplySummary {
+  summary_date: string;
+  demand_summary?: string;
+  supply_summary?: string;
+  combined_summary?: string;
+  demand_count?: number;
+  supply_count?: number;
+}
+
+interface MaterialPriceHistoryUpdateRequest {
+  material_id: string;
+  location_id: number;
+  news_insights?: NewsInsight[];
+  demand_supply_summary?: DemandSupplySummary;
+}
+
+interface MaterialPriceHistoryUpdateResponse {
+  success: boolean;
+  message: string;
+  material_id: number;
+  location_id: number;
+  updated_news_count?: number;
+  updated_demand_supply?: boolean;
+}

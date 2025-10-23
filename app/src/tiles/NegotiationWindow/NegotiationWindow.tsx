@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import EditableMaterialTable from "./Table/PricingHistoryTable";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
@@ -21,6 +21,7 @@ const NegotiationWindow: React.FC = () => {
   const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>("Best");
   const [showSettings, setShowSettings] = useState(false);
+  const [currentModelFromAPI, setCurrentModelFromAPI] = useState<string>("Best");
 
   const models = [
     "Best",
@@ -30,6 +31,16 @@ const NegotiationWindow: React.FC = () => {
     "XGBoost",
     "N-BEATS"
   ];
+
+  // Replace "Best" with the full API model name if it contains "Best"
+  const availableModels = useMemo(() => {
+    if (currentModelFromAPI && currentModelFromAPI.includes("Best")) {
+      return models.map(model => 
+        model === "Best" ? currentModelFromAPI : model
+      );
+    }
+    return models;
+  }, [currentModelFromAPI, models]);
 
 
   useEffect(() => {
@@ -75,11 +86,11 @@ const NegotiationWindow: React.FC = () => {
               }}
             />
 
-            <ModelSelector
-              models={models}
-              selectedModel={selectedModel}
-              setSelectedModel={setSelectedModel}
-            />
+        <ModelSelector
+          models={availableModels}
+          selectedModel={currentModelFromAPI}
+          setSelectedModel={setSelectedModel}
+        />
 
             <button
               className="text-gray-600 hover:text-gray-900 text-2xl"
@@ -97,7 +108,11 @@ const NegotiationWindow: React.FC = () => {
         <h2 className="text-xl font-semibold text-gray-700 mb-4">
           Glycerine Price Trend & Forecast
         </h2>
-        <GlycerinePriceChart locationId={selectedLocationId} model={selectedModel} />
+        <GlycerinePriceChart 
+          locationId={selectedLocationId} 
+          model={selectedModel} 
+          onModelChange={setCurrentModelFromAPI}
+        />
         <h2 className="text-xl font-semibold text-gray-700 mb-4">
           Recent Price Data & Supply Insights
         </h2>

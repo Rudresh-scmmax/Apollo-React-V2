@@ -39,7 +39,7 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
   };
 
   // Filter for last 12 months + future forecasts
-  const filteredSortedData = (materialPriceHistory || []).filter(item => {
+  const filteredSortedData = (materialPriceHistory?.data || []).filter(item => {
     const itemDate = parseMonthYear(item.month);
     const diffMonths =
       (itemDate.getFullYear() - currentDate.getFullYear()) * 12 +
@@ -54,33 +54,26 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
 
   filteredSortedData.forEach((item) => {
     if (item.price) {
+      // Historical data
       historicalData.push({
         x: item.month,
         y: parseFloat(item.price),
-        news: Array.isArray(item.news)
+        news: Array.isArray(item.news) && item.news.length > 0
           ? item.news.map((n: any) => `• ${n.title}`).join("<br/>")
-          : item.news?.title
-          ? `• ${item.news.title}`
           : "No news available",
       });
-    } else {
-      if (item.short_forecast) {
-        shortTermData.push({ x: item.month, y: parseFloat(item.short_forecast) });
-      }
-      if (item.long_forecast) {
-        longTermData.push({ x: item.month, y: parseFloat(item.long_forecast) });
-      }
-      if (item.forecast_value) {
-        averageData.push({ x: item.month, y: parseFloat(item.forecast_value) });
-      }
+    } else if (item.forecast_value) {
+      // Forecast data
+      averageData.push({
+        x: item.month,
+        y: parseFloat(item.forecast_value),
+      });
     }
   });
 
   const monthCategories = Array.from(
     new Set([
       ...historicalData.map((d) => d.x),
-      ...shortTermData.map((d) => d.x),
-      ...longTermData.map((d) => d.x),
       ...averageData.map((d) => d.x),
     ])
   ).sort((a, b) => {
@@ -98,8 +91,6 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
   const createDataArray = () => Array(monthCategories.length).fill(null);
 
   const mappedHistoricalData = createDataArray();
-  const mappedShortTermData = createDataArray();
-  const mappedLongTermData = createDataArray();
   const mappedAverageData = createDataArray();
 
   const lastHistoricalPoint = historicalData.length > 0 ? historicalData[historicalData.length - 1] : null;
@@ -111,19 +102,9 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
   });
 
   if (lastHistoricalPoint && lastHistoricalIndex !== -1) {
-    mappedShortTermData[lastHistoricalIndex] = lastHistoricalPoint.y;
-    mappedLongTermData[lastHistoricalIndex] = lastHistoricalPoint.y;
     mappedAverageData[lastHistoricalIndex] = lastHistoricalPoint.y;
   }
 
-  shortTermData.forEach(({ x, y }) => {
-    const idx = monthCategories.indexOf(x);
-    if (idx !== -1) mappedShortTermData[idx] = y;
-  });
-  longTermData.forEach(({ x, y }) => {
-    const idx = monthCategories.indexOf(x);
-    if (idx !== -1) mappedLongTermData[idx] = y;
-  });
   averageData.forEach(({ x, y }) => {
     const idx = monthCategories.indexOf(x);
     if (idx !== -1) mappedAverageData[idx] = y;
@@ -137,10 +118,11 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
       color: "#a0bf3f",
     },
     {
-      name: "Forecast Average",
+      name: "Forecast",
       type: "line" as const,
       data: mappedAverageData,
       color: "#808080",
+      dashArray: 5,
     },
   ];
 
@@ -165,7 +147,7 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
     stroke: {
       width: [2, 2],
       curve: "smooth",
-      // dashArray: [0, 0],
+      dashArray: [0, 5],
     },
     markers: {
       size: [4, 4],
@@ -239,10 +221,10 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
                         </div>
                     `;
         } else {
-          const forecastAvg = series[1]?.[dataPointIndex];
-          if (forecastAvg !== null && forecastAvg !== undefined) {
+          const forecast = series[1]?.[dataPointIndex];
+          if (forecast !== null && forecast !== undefined) {
             content += `<div style="margin-bottom: 5px;">
-                                <span style="color: #808080">●</span> <b>Forecast Average:</b> ${forecastAvg.toFixed(2)} USD/tonne
+                                <span style="color: #808080">●</span> <b>Forecast:</b> ${forecast.toFixed(2)} USD/tonne
                             </div>`;
           }
         }

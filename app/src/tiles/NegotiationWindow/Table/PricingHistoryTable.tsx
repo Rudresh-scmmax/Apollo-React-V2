@@ -12,25 +12,29 @@ interface GlycerinePriceChartProps {
 }
 
 interface NewsHighlight {
+  url: string;
+  tags: string[];
   title: string;
-  news_url: string;
+  published_date: string;
+  type_of_impact: string;
 }
 
 interface MaterialPriceHistory {
   id: number;
-  month: string;
+  material_code: string;
+  date: string;
   price_per_uom: string;
-  capacity_utilization: string;
-  conversion_spread: string;
-  factors_influencing_demand: NewsHighlight[] | string;
-  demand_summary: string;
-  supply_summary: string;
-  demand_outlook: string;
-  factors_influencing_supply: NewsHighlight[] | string;
-  supply_disruption: string;
-  business_cycle: string;
-  news_highlight: NewsHighlight[] | string;
-  news_insights_obj: {};
+  currency: string;
+  region: string;
+  news_insights: NewsHighlight[] | null;
+  date_month: string;
+  demand_summary: string | null;
+  supply_summary: string | null;
+  combined_summary?: string | null;
+  demand_count?: number | null;
+  supply_count?: number | null;
+  source: string;
+  month: string;
 }
 
 const formStyles = {
@@ -46,7 +50,7 @@ const { Option } = Select;
 const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
   locationId,
 }) => {
-  const { updateMaterialPriceHistory, getMaterialPriceHistory } =
+  const { updateMaterialPriceHistory, updateMaterialPriceHistoryBulk, getMaterialPriceHistory } =
     useBusinessAPI();
   const queryClient = useQueryClient();
   const selectedMaterial = useSelector(
@@ -70,32 +74,103 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
 
   useEffect(() => {
     if (materialPriceHistory) {
-      const parsed = materialPriceHistory.map((row: any) => ({
-        ...row,
-        news_highlight:
-          typeof row.news_highlight === "string"
-            ? JSON.parse(row.news_highlight)
-            : row.news_highlight,
-      }));
-      setMaterialPriceHistoryData(parsed);
+      setMaterialPriceHistoryData(materialPriceHistory);
     }
   }, [materialPriceHistory]);
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const updates = Object.entries(editingData);
-      await Promise.all(
-        updates.map(([id, fields]) =>
-          Promise.all(
-            Object.entries(fields).map(([field, value]) =>
-              updateMaterialPriceHistory(Number(id), field, value as string)
-            )
-          )
-        )
-      );
+      console.log("Selected Material:", selectedMaterial);
+      console.log("Location ID:", locationId);
+      
+      if (!selectedMaterial) {
+        throw new Error("No material selected. Please select a material first.");
+      }
+      
+      if (!selectedMaterial.material_id) {
+        throw new Error("Material ID is missing. Please select a valid material.");
+      }
+      
+      if (!locationId) {
+        throw new Error("Location is required. Please select a location.");
+      }
+
+      // Prepare news insights from the editing data
+      const newsInsights: any[] = [];
+      const demandSupplySummaries: any[] = [];
+
+      Object.entries(editingData).forEach(([id, fields]) => {
+        const record = materialPriceHistoryData?.find((item: any) => item.id === Number(id));
+        if (!record) return;
+
+        // Process news insights
+        if (fields.news_insights) {
+          try {
+            const newsData = typeof fields.news_insights === 'string' 
+              ? JSON.parse(fields.news_insights) 
+              : fields.news_insights;
+            
+            if (Array.isArray(newsData)) {
+              newsData.forEach((newsItem: any) => {
+                if (newsItem && newsItem.title) {
+                  newsInsights.push({
+                    title: newsItem.title,
+                    source: newsItem.source || newsItem.source_link || '',
+                    source_link: newsItem.url || newsItem.source_link || '',
+                    published_date: newsItem.published_date || record.date,
+                    news_tag: newsItem.type_of_impact || newsItem.news_tag || '',
+                    sentiment: newsItem.sentiment,
+                    impact_score: newsItem.impact_score,
+                    relevance_score: newsItem.relevance_score
+                  });
+                }
+              });
+            }
+          } catch (e) {
+            console.error('Error parsing news insights:', e);
+          }
+        }
+
+        // Process demand/supply summaries
+        if (fields.demand_summary || fields.supply_summary) {
+          demandSupplySummaries.push({
+            summary_date: record.date,
+            demand_summary: fields.demand_summary || record.demand_summary,
+            supply_summary: fields.supply_summary || record.supply_summary,
+            combined_summary: fields.combined_summary || record.combined_summary,
+            demand_count: fields.demand_count || record.demand_count,
+            supply_count: fields.supply_count || record.supply_count
+          });
+        }
+      });
+
+      // Use the new bulk update API
+      const materialIdStr = selectedMaterial.material_id;
+      console.log("Material ID string:", materialIdStr, "Type:", typeof materialIdStr);
+      
+      if (!materialIdStr || materialIdStr === 'null' || materialIdStr === 'undefined') {
+        throw new Error("Material ID is null or undefined. Please select a valid material.");
+      }
+      
+      // The API expects material_id as a string, so we'll use it as-is
+      const materialId = String(materialIdStr);
+      console.log("Material ID for API:", materialId);
+
+      const request = {
+        material_id: materialId,
+        location_id: locationId,
+        ...(newsInsights.length > 0 && { news_insights: newsInsights }),
+        ...(demandSupplySummaries.length > 0 && { 
+          demand_supply_summary: demandSupplySummaries[0] // Take the first one for now
+        })
+      };
+
+      console.log("API Request:", request);
+
+      return updateMaterialPriceHistoryBulk(request);
     },
-    onSuccess: () => {
-      message.success("Material price history updated successfully");
+    onSuccess: (response) => {
+      message.success(`Material price history updated successfully. ${response.updated_news_count ? `Updated ${response.updated_news_count} news insights.` : ''}`);
       queryClient.invalidateQueries({ queryKey: ["materialPriceHistory"] });
       queryClient.invalidateQueries({ queryKey: ["materialPrices"] });
       queryClient.invalidateQueries({ queryKey: ["recomendations"] });
@@ -103,8 +178,8 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
       setEditingKey(null);
       setEditingColumn(null);
     },
-    onError: () => {
-      message.error("Error updating material price history");
+    onError: (error) => {
+      message.error(`Error updating material price history: ${error.message}`);
     },
   });
 
@@ -141,19 +216,14 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
       key: "month",
     },
     {
-      title: "PricePerUom",
+      title: "Price Per UOM",
       dataIndex: "price_per_uom",
       key: "price_per_uom",
     },
     ...[
-      "capacity_utilization",
-      "conversion_spread",
       "demand_summary",
-      "demand_outlook",
       "supply_summary",
-      "supply_disruption",
-      "business_cycle",
-      "news_highlight",
+      "news_insights",
     ].map((key) => ({
       title: key.replace(/_/g, " ").toUpperCase(),
       dataIndex: key,
@@ -162,7 +232,7 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
         const isEditing = editingKey === record.id && editingColumn === key;
         const isLinkField = ["demand_summary", "supply_summary"].includes(key);
         const isNewsLikeField = [
-          "news_highlight",
+          "news_insights",
           "demand_summary",
           "supply_summary",
         ].includes(key);
@@ -170,46 +240,34 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
         const isEditableNewsField = [
           "demand_summary",
           "supply_summary",
-          "news_highlight",
-          "capacity_utilization",
-          "conversion_spread",
-          "business_cycle",
+          "news_insights",
         ].includes(key);
 
         // ...inside the render function for news-like fields...
         if (isNewsLikeField) {
           let newsData: NewsHighlight[] | string = text;
 
-          try {
-            newsData = typeof text === "string" ? JSON.parse(text) : text;
-            newsData = Array.isArray(newsData)
-              ? newsData.filter(
-                  (item): item is NewsHighlight =>
-                    typeof item === "object" &&
-                    item !== null &&
-                    "title" in item &&
-                    "news_url" in item
-                )
-              : newsData[0];
-          } catch (e) {
+          if (key === "news_insights") {
             newsData = text;
-          }
-
-          // Filter to show ONLY news items that have tags (for news_highlight column)
-          if (key === "news_highlight" && Array.isArray(newsData)) {
-            newsData = newsData.filter((newsItem: any) => {
-              // Check if the news item has tags
-              if (
-                newsItem &&
-                typeof newsItem === "object" &&
-                "tags" in newsItem &&
-                Array.isArray(newsItem.tags) &&
-                newsItem.tags.length > 0
-              ) {
-                return true; // Show this news item - it has tags
-              }
-              return false; // Hide this news item - no tags
-            });
+            // Filter to show ONLY news items that have tags
+            if (Array.isArray(newsData)) {
+              newsData = newsData.filter((newsItem: any) => {
+                // Check if the news item has tags
+                if (
+                  newsItem &&
+                  typeof newsItem === "object" &&
+                  "tags" in newsItem &&
+                  Array.isArray(newsItem.tags) &&
+                  newsItem.tags.length > 0
+                ) {
+                  return true; // Show this news item - it has tags
+                }
+                return false; // Hide this news item - no tags
+              });
+            }
+          } else {
+            // For demand_summary and supply_summary, keep as string
+            newsData = text;
           }
 
           const hasNews =
@@ -229,7 +287,7 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
                   >
                     <span style={{ marginRight: "8px" }}>•</span>
                     <a
-                      href={news?.news_url}
+                      href={news?.url}
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={(e) => e.stopPropagation()}
@@ -289,7 +347,7 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
 
           // Optional: tooltip for extra info (show individual news items with their tags)
           if (
-            key === "news_highlight" &&
+            key === "news_insights" &&
             Array.isArray(newsData) &&
             newsData.length > 0
           ) {
@@ -318,7 +376,7 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
                       <strong style={{ color: '#60a5fa' }}>Date:</strong> {newsItem.published_date}
                     </div>
                     <div style={{ color: '#f1f5f9', marginBottom: 6 }}>
-                      <strong style={{ color: '#60a5fa' }}>Source:</strong> {newsItem.source}
+                      <strong style={{ color: '#60a5fa' }}>Type:</strong> {newsItem.type_of_impact}
                     </div>
                     {newsItem.tags && newsItem.tags.length > 0 && (
                       <div style={{ color: '#f1f5f9' }}>
@@ -375,53 +433,26 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
           );
         }
 
-        // ...for other editable fields (like demand_outlook, supply_disruption)...
-        return isEditing ||
-          ["demand_outlook", "supply_disruption"].includes(key) ? (
-          ["demand_outlook", "supply_disruption"].includes(key) ? (
-            <Select
-              value={
-                editingData[record.id]?.[key as keyof MaterialPriceHistory] ||
-                text
-              }
-              onChange={(value) =>
-                handleInputChange(
-                  value,
-                  record.id,
-                  key as keyof MaterialPriceHistory
-                )
-              }
-            >
-              {["Low", "Medium", "High"].map((option) => (
-                <Option key={option} value={option}>
-                  {option}
-                </Option>
-              ))}
-            </Select>
-          ) : (
-            <Input
-              value={
-                editingData[record.id]?.[key as keyof MaterialPriceHistory] ||
-                text
-              }
-              onChange={(e) =>
-                handleInputChange(
-                  e.target.value,
-                  record.id,
-                  key as keyof MaterialPriceHistory
-                )
-              }
-              autoFocus
-            />
-          )
+        // For other fields
+        return isEditing ? (
+          <Input
+            value={
+              editingData[record.id]?.[key as keyof MaterialPriceHistory] ||
+              text
+            }
+            onChange={(e) =>
+              handleInputChange(
+                e.target.value,
+                record.id,
+                key as keyof MaterialPriceHistory
+              )
+            }
+            autoFocus
+          />
         ) : (
           <span
             onDoubleClick={(e) => {
-              if (
-                key === "demand_outlook" ||
-                key === "supply_disruption" ||
-                isEditableNewsField
-              ) {
+              if (isEditableNewsField) {
                 e.preventDefault();
                 setEditingKey(record.id);
                 setEditingColumn(key);
@@ -431,18 +462,11 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
               display: "flex",
               alignItems: "center",
               gap: "5px",
-              cursor:
-                key === "demand_outlook" ||
-                key === "supply_disruption" ||
-                isEditableNewsField
-                  ? "pointer"
-                  : "default",
+              cursor: isEditableNewsField ? "pointer" : "default",
               minHeight: 32,
               color:
                 (text === undefined || text === null || text === "") &&
-                (isEditableNewsField ||
-                  key === "demand_outlook" ||
-                  key === "supply_disruption")
+                isEditableNewsField
                   ? "#bbb"
                   : undefined,
             }}
@@ -483,7 +507,9 @@ const EditableMaterialTable: React.FC<GlycerinePriceChartProps> = ({
                 Object.keys(editingData).length && mutation.mutate()
               }
               disabled={
-                Object.keys(editingData).length === 0 || mutation.isPending
+                Object.keys(editingData).length === 0 || 
+                mutation.isPending ||
+                !selectedMaterial?.material_id
               }
               className={formStyles.button}
             >
