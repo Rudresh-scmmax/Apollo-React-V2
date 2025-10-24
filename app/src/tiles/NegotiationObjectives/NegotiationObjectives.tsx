@@ -114,8 +114,6 @@ const initialNegotiationData: NegotiationData = {
 const NegotiationObjectives: React.FC = () => {
   const { 
     getVendors, 
-    getNegotiationObjectives, 
-    createNegotiationObjectives, 
     getMaterials, 
     getTargetNegotiation, 
     getTcoPrices, 
@@ -132,6 +130,13 @@ const NegotiationObjectives: React.FC = () => {
 
   const getGlobalSetMaterial = useSelector((state: RootState) => state.material.globalSelectedMaterial);
   const [selectedMaterial, setSelectedMaterial] = useState<SelectedMaterial | null>(getGlobalSetMaterial);
+
+  // Update selectedMaterial when Redux store changes
+  useEffect(() => {
+    if (getGlobalSetMaterial) {
+      setSelectedMaterial(getGlobalSetMaterial);
+    }
+  }, [getGlobalSetMaterial]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [recommendationStatus, setRecommendationStatus] = useState<string | null>(null);
 
@@ -143,11 +148,27 @@ const NegotiationObjectives: React.FC = () => {
     queryFn: getMaterials,
   });
 
-  const { data: vendorsData = [] } = useQuery<string[]>({
+  const { data: vendorsData = [], isLoading: isLoadingVendors, error: vendorsError } = useQuery<string[]>({
     queryKey: ["vendorsData", selectedMaterial?.material_id || ""],
-    queryFn: () => getVendors(selectedMaterial?.material_id || ""),
+    queryFn: () => {
+      console.log("Calling getVendors with material_id:", selectedMaterial?.material_id);
+      return getVendors(selectedMaterial?.material_id || "");
+    },
     enabled: !!selectedMaterial?.material_id,
   });
+
+  // Debug logging
+  useEffect(() => {
+    console.log("=== NEGOTIATION OBJECTIVES DEBUG ===");
+    console.log("Global Set Material (Redux):", getGlobalSetMaterial);
+    console.log("Selected Material (Local State):", selectedMaterial);
+    console.log("Material ID:", selectedMaterial?.material_id);
+    console.log("Vendors Data:", vendorsData);
+    console.log("Is Loading Vendors:", isLoadingVendors);
+    console.log("Vendors Error:", vendorsError);
+    console.log("Query Enabled:", !!selectedMaterial?.material_id);
+    console.log("=====================================");
+  }, [getGlobalSetMaterial, selectedMaterial, vendorsData, isLoadingVendors, vendorsError]);
 
   const { data: targetNegotiation } = useQuery<{ min_value: number; max_value: number, min_source: string, max_source: string }>({
     queryKey: ["targetNegotiation", selectedMaterial?.material_id, date, vendor],
@@ -185,11 +206,6 @@ const NegotiationObjectives: React.FC = () => {
     enabled: !!selectedMaterial?.material_id && !!date,
   });
 
-  const { data: negotiationObjectives, isLoading: isLoadingObjectives } = useQuery({
-    queryKey: ["negotiationObjectives", vendor || "", date || ""],
-    queryFn: () => getNegotiationObjectives(vendor || "", date || ""),
-    enabled: !!vendor && !!date,
-  });
 
   const { data: negotiationRecommendationsData, isLoading: isLoadingRecommendations } = useQuery({
     queryKey: ["negotiationRecommendations", vendor || "", date || ""],
@@ -214,13 +230,6 @@ const NegotiationObjectives: React.FC = () => {
     setData((prev) => {
       let updated = { ...prev };
 
-      // Negotiation objectives (objective, strategy, marketUpdate, wishlists)
-      if (negotiationObjectives?.objectives) {
-        updated = {
-          ...updated,
-          ...negotiationObjectives.objectives,
-        };
-      }
 
       // Target Negotiation
       if (targetNegotiation) {
@@ -305,7 +314,7 @@ const NegotiationObjectives: React.FC = () => {
 
       return updated;
     });
-  }, [negotiationObjectives, targetNegotiation, shouldBePrice, importPrice, exportPrice, tcoPrices, negotiationRecommendationsData]);
+  }, [targetNegotiation, shouldBePrice, importPrice, exportPrice, tcoPrices, negotiationRecommendationsData]);
 
   console.log("data", data);
 
@@ -318,6 +327,22 @@ const NegotiationObjectives: React.FC = () => {
       setVendor("");
     }
   }, [vendorsData]);
+
+  // Reset strategy and market update data when date or vendor changes
+  useEffect(() => {
+    setData((prev) => ({
+      ...prev,
+      strategy: {
+        supplierSOB: prev.strategy.supplierSOB, // Keep user input
+        whatWeWantToAvoid: "", // Clear AI-generated data
+        whatTheyWantToAvoid: "", // Clear AI-generated data
+      },
+      marketUpdate: {
+        myInfo: prev.marketUpdate.myInfo, // Keep user input
+        questionsToAsk: "", // Clear AI-generated data
+      },
+    }));
+  }, [date, vendor]);
 
   const deepClone = <T,>(obj: T): T => JSON.parse(JSON.stringify(obj));
 
@@ -348,8 +373,8 @@ const NegotiationObjectives: React.FC = () => {
     }
     setLoading(true);
     try {
-      await createNegotiationObjectives(vendor, date, data, selectedMaterial?.material_id || "");
-      message.success("Negotiation objectives saved successfully!");
+      // TODO: Implement save functionality when needed
+      message.success("Save functionality not implemented yet!");
     } catch (e) {
       console.error("Error saving data:", e);
       message.error("Failed to save data. Please try again.");

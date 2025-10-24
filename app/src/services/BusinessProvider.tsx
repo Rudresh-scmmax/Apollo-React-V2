@@ -137,6 +137,7 @@ interface BusinessContextType {
   getPriceHistoryTrend: (year: number, material: string) => Promise<any>;
   getPortersAnalysis: (materalId: string) => Promise<any>;
   refreshPortersAnalysis: (materalId: string, forceRefresh?: boolean) => Promise<any>;
+  updatePortersAnalysis: (material_id: string, analysis_json: any) => Promise<any>;
   uploadSingleNewsHighlight: (title: string, published_date: string, news_url: string, material_id: string) => Promise<any>;
   updateShutdownTracking: (
     updateData: ShutdownTrackingUpdateInput
@@ -145,8 +146,6 @@ interface BusinessContextType {
   updateVendorKeyInformation: (
     rowData: VendorKeyInfoUpdate) => Promise<any>;
   getVendors: (material_id: string) => Promise<string[]>;
-  getNegotiationObjectives: (vendor_name: string, date: string) => Promise<any>;
-  createNegotiationObjectives: (vendor_name: string, date: string, objectives: NegotiationData, material_id: string) => Promise<any>;
   getNegotiationAvoids: (vendor: string, date: string, material_id?: string, signals?: any) => Promise<any>;
   uploadSpendAnalysis: (file: File) => Promise<any>;
   triggerForecast: (material_id: string, location_id: string, model_name: string) => Promise<any>;
@@ -1053,6 +1052,19 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     );
   };
 
+  const updatePortersAnalysis = async (material_id: string, analysis_json: any): Promise<any> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("material_id", material_id);
+    
+    return fetchWrapper(`${businessApiUrl}/porters-analysis?${queryParams.toString()}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ analysis_json }),
+    });
+  };
+
   const getUserPreferences = async (): Promise<{user_prefered_currency: string}> => {
     return fetchWrapper(`${businessApiUrl}/user-preferences`, {
       method: "GET",
@@ -1112,21 +1124,16 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getVendors = async (material_id: string): Promise<any[]> => {
+    console.log("getVendors called with material_id:", material_id);
     const queryParams = new URLSearchParams();
     queryParams.append("material_id", material_id);
-    return fetchWrapper(`${businessApiUrl}/get-vendors?${queryParams.toString()}`, {
+    const url = `${businessApiUrl}/get-vendors?${queryParams.toString()}`;
+    console.log("getVendors API URL:", url);
+    return fetchWrapper(url, {
       method: "GET",
     });
   }
 
-  const getNegotiationObjectives = async (vendor_name: string, date: string): Promise<any> => {
-    const queryParams = new URLSearchParams();
-    queryParams.append("vendor_name", vendor_name);
-    queryParams.append("date", date);
-    return fetchWrapper(`${businessApiUrl}/negotiation-objectives?${queryParams.toString()}`, {
-      method: "GET",
-    });
-  }
 
   const refreshRecommendation = async (vendor_name: string, date: string, material_id: string): Promise<any> => {
     const queryParams = new URLSearchParams();
@@ -1158,20 +1165,6 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const createNegotiationObjectives = async (
-    vendor_name: string,
-    date: string,
-    objectives: NegotiationData,
-    material_id: string
-  ): Promise<any> => {
-    return fetchWrapper(`${businessApiUrl}/create-negotiation-objectives`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ vendor_name, date, objectives, material_id }),
-    });
-  };
 
 
   const uploadSpendAnalysis = async (file: File): Promise<any> => {
@@ -1234,7 +1227,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     const queryParams = new URLSearchParams();
     queryParams.append("vendor_name", vendor_name);
     queryParams.append("date", date);
-    queryParams.append("region", "Asia-Pacific")
+    queryParams.append("location_id", "212")
     return fetchWrapper(`${businessApiUrl}/tco-prices?${queryParams.toString()}`, {
       method: "GET",
     });
@@ -1376,8 +1369,6 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     getSeasonalityTrends,
     updateVendorKeyInformation,
     getVendors,
-    getNegotiationObjectives,
-    createNegotiationObjectives,
     getNegotiationAvoids,
     uploadSpendAnalysis,
     triggerForecast,
@@ -1394,6 +1385,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     updatePlanAssignments,
     deleteTakeaway,
     refreshPortersAnalysis,
+    updatePortersAnalysis,
     getUserPreferences,
     updateUserPreferences,
     getCurrencyMaster,

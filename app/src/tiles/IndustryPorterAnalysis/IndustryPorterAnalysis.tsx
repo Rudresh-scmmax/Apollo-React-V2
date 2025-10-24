@@ -1,11 +1,11 @@
 import React, { useMemo, useState } from "react";
 import { FaExchangeAlt, FaUsers, FaUserTie, FaBalanceScale, FaIndustry } from "react-icons/fa";
-import { ReloadOutlined } from "@ant-design/icons";
+import { ReloadOutlined, EditOutlined, SaveOutlined, CloseOutlined } from "@ant-design/icons";
 import { useSelector } from "react-redux";
 import { RootState } from "../../store/store";
 import { useBusinessAPI } from "../../services/BusinessProvider";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Button } from "antd";
+import { Button, Input, Select, message } from "antd";
 
 // Icon mapping
 const forceIconMap: Record<string, React.ReactNode> = {
@@ -30,12 +30,15 @@ const gridTemplate = [
 ];
 
 const IndustryPorterAnalysis: React.FC = () => {
-  const { getPortersAnalysis, refreshPortersAnalysis } = useBusinessAPI();
+  const { getPortersAnalysis, refreshPortersAnalysis, updatePortersAnalysis } = useBusinessAPI();
   const selectedMaterial = useSelector((state: RootState) => state.material.globalSelectedMaterial);
   const materialCode = selectedMaterial?.material_id;
   const materialDesc = selectedMaterial?.material_description || "All Material";
 
   const [regenLoading, setRegenLoading] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [editedData, setEditedData] = useState<any>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
@@ -62,11 +65,53 @@ const IndustryPorterAnalysis: React.FC = () => {
     }
   };
 
+  const handleEdit = () => {
+    if (data) {
+      setEditedData(JSON.parse(JSON.stringify(data.porters_analysis || data)));
+      setIsEditMode(true);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!editedData || !materialCode) return;
+    
+    setSaveLoading(true);
+    try {
+      await updatePortersAnalysis(materialCode, editedData);
+      message.success("Porter's analysis updated successfully!");
+      setIsEditMode(false);
+      setEditedData(null);
+      queryClient.invalidateQueries({ queryKey: ["portersAnalysis", materialCode] });
+    } catch (error) {
+      message.error("Failed to update Porter's analysis");
+      console.error("Error updating analysis:", error);
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setIsEditMode(false);
+    setEditedData(null);
+  };
+
+  const handleFieldChange = (forceKey: string, field: string, value: string) => {
+    if (editedData) {
+      setEditedData((prev: any) => ({
+        ...prev,
+        [forceKey]: {
+          ...prev[forceKey],
+          [field]: value
+        }
+      }));
+    }
+  };
+
   const forces = useMemo(() => {
     if (!data || isError) return null;
 
-    // FIX: Support both top-level and nested structures
-    const porters = data.porters_analysis || data;
+    // Use edited data if in edit mode, otherwise use original data
+    const porters = isEditMode ? editedData : (data.porters_analysis || data);
 
     const keys = [
       "bargaining_power_suppliers",
@@ -100,33 +145,90 @@ const IndustryPorterAnalysis: React.FC = () => {
         key,
       };
     });
-  }, [data, isError]);
+  }, [data, isError, isEditMode, editedData]);
 
   return (
     <div className="min-h-screen bg-gray-50 pb-12 flex flex-col items-center justify-center">
       <div className="max-w-5xl w-full bg-white rounded-3xl shadow-lg px-10 py-10 mt-10">
         {/* Header row with flex alignment */}
         <div className="flex items-center justify-between mb-10">
-          <h1 className="text-2xl font-bold text-gray-800">
-            Porter's Five Forces Analysis for: <span className="text-lime-700">{materialDesc}</span>
-          </h1>
-          <Button
-            icon={<ReloadOutlined />}
-            loading={regenLoading}
-            // type="default"
-            onClick={handleRegenerate}
-            // className="ml-4"
-            style={{
-              backgroundColor: "#a0bf3f",
-              borderColor: "#a0bf3f",
-              fontSize: "16px",
-              height: "40px",
-              paddingLeft: "30px",
-              paddingRight: "30px"
-            }}
-          >
-            Regenerate Porter's Analysis
-          </Button>
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800">
+              Porter's Five Forces Analysis for: <span className="text-lime-700">{materialDesc}</span>
+            </h1>
+            {isEditMode && (
+              <p className="text-sm text-blue-600 mt-1">
+                ✏️ Edit Mode - You can modify the analysis below
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {!isEditMode ? (
+              <>
+                <Button
+                  icon={<EditOutlined />}
+                  onClick={handleEdit}
+                  style={{
+                    backgroundColor: "#1890ff",
+                    borderColor: "#1890ff",
+                    fontSize: "16px",
+                    height: "40px",
+                    paddingLeft: "30px",
+                    paddingRight: "30px"
+                  }}
+                >
+                  Edit Analysis
+                </Button>
+                <Button
+                  icon={<ReloadOutlined />}
+                  loading={regenLoading}
+                  onClick={handleRegenerate}
+                  style={{
+                    backgroundColor: "#a0bf3f",
+                    borderColor: "#a0bf3f",
+                    fontSize: "16px",
+                    height: "40px",
+                    paddingLeft: "30px",
+                    paddingRight: "30px"
+                  }}
+                >
+                  Regenerate Analysis
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button
+                  icon={<SaveOutlined />}
+                  loading={saveLoading}
+                  onClick={handleSave}
+                  style={{
+                    backgroundColor: "#52c41a",
+                    borderColor: "#52c41a",
+                    fontSize: "16px",
+                    height: "40px",
+                    paddingLeft: "30px",
+                    paddingRight: "30px"
+                  }}
+                >
+                  Save Changes
+                </Button>
+                <Button
+                  icon={<CloseOutlined />}
+                  onClick={handleCancel}
+                  style={{
+                    backgroundColor: "#ff4d4f",
+                    borderColor: "#ff4d4f",
+                    fontSize: "16px",
+                    height: "40px",
+                    paddingLeft: "30px",
+                    paddingRight: "30px"
+                  }}
+                >
+                  Cancel
+                </Button>
+              </>
+            )}
+          </div>
         </div>
         {/* Card grid below header row */}
         {isLoading ? (
@@ -138,7 +240,15 @@ const IndustryPorterAnalysis: React.FC = () => {
             {gridTemplate.flat().map((idx, i) => {
               if (idx !== null && forces[idx]) {
                 const { key, ...forceProps } = forces[idx];
-                return <ForceCard key={key} forceKey={key} {...forceProps} />;
+                return (
+                  <ForceCard 
+                    key={key} 
+                    forceKey={key} 
+                    {...forceProps} 
+                    isEditMode={isEditMode}
+                    onFieldChange={handleFieldChange}
+                  />
+                );
               } else {
                 return <div key={`empty-${i}`} />;
               }
@@ -158,22 +268,69 @@ const ForceCard: React.FC<{
   bar: string;
   color: string;
   forceKey: string;
-}> = ({ icon, title, description, intensity, bar, color, forceKey }) => (
-  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 flex flex-col justify-between min-h-[220px] w-full hover:shadow-md transition-shadow">
+  isEditMode?: boolean;
+  onFieldChange?: (forceKey: string, field: string, value: string) => void;
+}> = ({ icon, title, description, intensity, bar, color, forceKey, isEditMode = false, onFieldChange }) => {
+  const intensityOptions = [
+    { value: "Low", label: "Low" },
+    { value: "Medium", label: "Medium" },
+    { value: "High", label: "High" },
+  ];
+
+  const getBarClass = (intensity: string) => {
+    if (intensity?.toLowerCase().includes("high")) {
+      return "w-4/5 bg-lime-600";
+    } else if (intensity?.toLowerCase().includes("low")) {
+      return "w-1/5 bg-lime-200";
+    }
+    return "w-2/5 bg-lime-400";
+  };
+
+  return (
+  <div className={`bg-white rounded-lg shadow-sm border p-6 flex flex-col justify-between min-h-[220px] w-full hover:shadow-md transition-shadow ${
+    isEditMode ? 'border-blue-300 border-2' : 'border-gray-200'
+  }`}>
     <div className="flex items-center mb-2">
       {icon}
       <span className="font-bold text-lg ml-1" style={{ color: '#7ca200' }}>
         {prettyTitleMap[forceKey] || title}
       </span>
     </div>
-    <p className="text-gray-700 text-sm mb-6 leading-relaxed break-words">{description}</p>
+    
+    {isEditMode ? (
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+        <Input.TextArea
+          value={description}
+          onChange={(e) => onFieldChange?.(forceKey, "description", e.target.value)}
+          placeholder="Enter description"
+          autoSize={{ minRows: 3, maxRows: 6 }}
+          className="mb-4"
+        />
+      </div>
+    ) : (
+      <p className="text-gray-700 text-sm mb-6 leading-relaxed break-words">{description}</p>
+    )}
+    
     <div className="flex items-center justify-between mt-auto">
       <div className="w-3/5 h-1.5 bg-gray-200 rounded-full overflow-hidden mr-2">
-        <div className={`h-1.5 rounded-full ${bar}`}></div>
+        <div className={`h-1.5 rounded-full ${isEditMode ? getBarClass(intensity) : bar}`}></div>
       </div>
-      <span className={`text-xs font-semibold ${color} whitespace-nowrap`}>{intensity}</span>
+      
+      {isEditMode ? (
+        <Select
+          value={intensity}
+          onChange={(value) => onFieldChange?.(forceKey, "intensity", value)}
+          options={intensityOptions}
+          className="w-20"
+          size="small"
+        />
+      ) : (
+        <span className={`text-xs font-semibold ${color} whitespace-nowrap`}>{intensity}</span>
+      )}
     </div>
   </div>
-);
+  );
+};
 
 export default IndustryPorterAnalysis;
