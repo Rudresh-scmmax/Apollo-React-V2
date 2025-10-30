@@ -137,7 +137,7 @@ interface BusinessContextType {
   getPriceHistoryTrend: (year: number, material: string) => Promise<any>;
   getPortersAnalysis: (materalId: string) => Promise<any>;
   refreshPortersAnalysis: (materalId: string, forceRefresh?: boolean) => Promise<any>;
-  updatePortersAnalysis: (material_id: string, analysis_json: any) => Promise<any>;
+  updatePortersAnalysis: (material_id: string, analysis_json: any, analysis_id?: number) => Promise<any>;
   uploadSingleNewsHighlight: (title: string, published_date: string, news_url: string, material_id: string) => Promise<any>;
   updateShutdownTracking: (
     updateData: ShutdownTrackingUpdateInput
@@ -992,7 +992,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   const getTradeData = async (material: string, year: string): Promise<any> => {
     const queryParams = new URLSearchParams();
 
-    if (material) queryParams.append("material", material);
+    if (material) queryParams.append("material_id", material);
     if (year) queryParams.append("year", String(year));
 
     const queryString = queryParams.toString()
@@ -1052,9 +1052,12 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     );
   };
 
-  const updatePortersAnalysis = async (material_id: string, analysis_json: any): Promise<any> => {
+  const updatePortersAnalysis = async (material_id: string, analysis_json: any, analysis_id?: number): Promise<any> => {
     const queryParams = new URLSearchParams();
     queryParams.append("material_id", material_id);
+    if (analysis_id) {
+      queryParams.append("analysis_id", analysis_id.toString());
+    }
     
     return fetchWrapper(`${businessApiUrl}/porters-analysis?${queryParams.toString()}`, {
       method: "PUT",

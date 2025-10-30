@@ -39,6 +39,7 @@ const IndustryPorterAnalysis: React.FC = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [editedData, setEditedData] = useState<any>(null);
+  const [analysisId, setAnalysisId] = useState<number | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError } = useQuery({
@@ -67,7 +68,8 @@ const IndustryPorterAnalysis: React.FC = () => {
 
   const handleEdit = () => {
     if (data) {
-      setEditedData(JSON.parse(JSON.stringify(data.porters_analysis || data)));
+      setAnalysisId(data.id);
+      setEditedData(JSON.parse(JSON.stringify(data.analysis_json)));
       setIsEditMode(true);
     }
   };
@@ -77,10 +79,11 @@ const IndustryPorterAnalysis: React.FC = () => {
     
     setSaveLoading(true);
     try {
-      await updatePortersAnalysis(materialCode, editedData);
+      await updatePortersAnalysis(materialCode, editedData, analysisId || undefined);
       message.success("Porter's analysis updated successfully!");
       setIsEditMode(false);
       setEditedData(null);
+      setAnalysisId(null);
       queryClient.invalidateQueries({ queryKey: ["portersAnalysis", materialCode] });
     } catch (error) {
       message.error("Failed to update Porter's analysis");
@@ -93,6 +96,7 @@ const IndustryPorterAnalysis: React.FC = () => {
   const handleCancel = () => {
     setIsEditMode(false);
     setEditedData(null);
+    setAnalysisId(null);
   };
 
   const handleFieldChange = (forceKey: string, field: string, value: string) => {
@@ -111,7 +115,7 @@ const IndustryPorterAnalysis: React.FC = () => {
     if (!data || isError) return null;
 
     // Use edited data if in edit mode, otherwise use original data
-    const porters = isEditMode ? editedData : (data.porters_analysis || data);
+    const porters = isEditMode ? editedData : data.analysis_json;
 
     const keys = [
       "bargaining_power_suppliers",

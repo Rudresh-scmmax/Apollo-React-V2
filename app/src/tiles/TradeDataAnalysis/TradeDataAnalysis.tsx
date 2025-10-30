@@ -14,28 +14,61 @@ const months = [
 ];
 
 interface TradeDataRow {
-  supplier_name: string;
+  source: string;
+  region: string;
   type: "Qty in MT" | "Price in $/MT";
   grand_total: string;
   [key: string]: any;
 }
 
-// Function to generate a simple best price insight
-function getBestPriceInsight(tradeData: { data?: { supplier_name: string; grand_total_price: number | string }[] }): string {
-  if (!tradeData?.data?.length) return "No data available for insights.";
+interface ApiTradeData {
+  location_id: number;
+  material_id: string;
+  hsn_code: string;
+  quantity: string;
+  currency: string;
+  created_at: string;
+  id: number;
+  month_year: string;
+  price_per_quantity: string;
+  unit: string;
+  source: string;
+  updated_at: string;
+  material_description: string;
+  region: string;
+}
 
-  let minPrice = Infinity;
-  let bestSupplier = "";
-  tradeData.data.forEach((supplier: { supplier_name: string; grand_total_price: number | string }) => {
-    const price = Number(supplier.grand_total_price);
-    if (!isNaN(price) && price > 0 && price < minPrice) {
-      minPrice = price;
-      bestSupplier = supplier.supplier_name;
+// Function to generate a simple best price insight
+function getBestPriceInsight(tradeData: { data?: ApiTradeData[]; rows?: ApiTradeData[] }): string {
+  const dataArray = tradeData?.rows || tradeData?.data;
+  if (!dataArray?.length) return "No data available for insights.";
+
+  const avgPrices: { [key: string]: { total: number; count: number } } = {};
+  
+  dataArray.forEach((record: ApiTradeData) => {
+    const price = Number(record.price_per_quantity);
+    if (!isNaN(price) && price > 0) {
+      if (!avgPrices[record.source]) {
+        avgPrices[record.source] = { total: 0, count: 0 };
+      }
+      avgPrices[record.source].total += price;
+      avgPrices[record.source].count += 1;
     }
   });
 
-  if (bestSupplier) {
-    return `Best price offered by ${bestSupplier} at $${minPrice.toFixed(2)}.`;
+  let minAvgPrice = Infinity;
+  let bestSource = "";
+  
+  Object.entries(avgPrices).forEach(([source, data]) => {
+    const avgPrice = data.total / data.count;
+    if (avgPrice < minAvgPrice) {
+      minAvgPrice = avgPrice;
+      bestSource = source;
+    }
+  });
+
+  if (bestSource) {
+    return `Best average price offered by ${bestSource} at $${minAvgPrice.toFixed(2)}/MT.`;
   } else {
     return "No valid price data to generate insights.";
   }
@@ -59,26 +92,71 @@ const TradeDataAnalysis: React.FC = () => {
   } = useQuery({
     queryKey: ["tradeData", selectedMaterial?.material_id, selectedYear],
     queryFn: () =>
-      getTradeData(selectedMaterial?.material_id || "", selectedYear),
+      getTradeData(selectedMaterial?.material_id || "", selectedYear.toString()),
     enabled: !!selectedMaterial,
   });
 
-  // Transform API data to two rows per supplier
+  // Transform API data to two rows per source
   const tableData: TradeDataRow[] = [];
-  if (tradeData?.data) {
-    tradeData.data.forEach((supplier: any) => {
+  const dataArray = tradeData?.rows || tradeData?.data;
+  
+  if (dataArray) {
+    // Group by source and region
+    const sourceData: { [key: string]: { region: string; months: { [month: string]: { qty: number; price: number } } } } = {};
+    let totalQty: { [key: string]: number } = {};
+    let totalPrice: { [key: string]: number } = {};
+    
+    dataArray.forEach((record: ApiTradeData) => {
+      if (!sourceData[record.source]) {
+        sourceData[record.source] = { region: record.region, months: {} };
+        totalQty[record.source] = 0;
+        totalPrice[record.source] = 0;
+      }
+      
+      // Parse month from month_year (e.g., "Sep-2025", "Apr-2025")
+      const monthMatch = record.month_year.match(/\w+/);
+      let month = monthMatch ? monthMatch[0].toLowerCase().substring(0, 3) : "";
+      
+      // Map full month names to 3-letter abbreviations
+      const monthMap: { [key: string]: string } = {
+        'jan': 'jan', 'feb': 'feb', 'mar': 'mar', 'apr': 'apr',
+        'may': 'may', 'jun': 'jun', 'jul': 'jul', 'aug': 'aug',
+        'sep': 'sep', 'oct': 'oct', 'nov': 'nov', 'dec': 'dec'
+      };
+      
+      month = monthMap[month] || month;
+      
+      if (month && months.includes(month)) {
+        const qty = Number(record.quantity) || 0;
+        const price = Number(record.price_per_quantity) || 0;
+        
+        if (!sourceData[record.source].months[month]) {
+          sourceData[record.source].months[month] = { qty: 0, price: 0 };
+        }
+        
+        sourceData[record.source].months[month].qty += qty;
+        sourceData[record.source].months[month].price = price; // Take the latest price for the month
+        totalQty[record.source] += qty;
+        totalPrice[record.source] += price;
+      }
+    });
+    
+    // Create table rows
+    Object.entries(sourceData).forEach(([source, sourceInfo]) => {
       tableData.push({
-        supplier_name: supplier.supplier_name,
+        source: source,
+        region: sourceInfo.region,
         type: "Qty in MT",
-        ...months.reduce((acc, m) => ({ ...acc, [m]: supplier[`${m}_qty`] }), {}),
-        grand_total: supplier.grand_total_qty,
+        ...months.reduce((acc, m) => ({ ...acc, [m]: sourceInfo.months[m]?.qty || 0 }), {}),
+        grand_total: totalQty[source].toFixed(2),
         _rowSpan: 2,
       });
       tableData.push({
-        supplier_name: supplier.supplier_name,
+        source: source,
+        region: sourceInfo.region,
         type: "Price in $/MT",
-        ...months.reduce((acc, m) => ({ ...acc, [m]: supplier[`${m}_price`] }), {}),
-        grand_total: Math.ceil(supplier.grand_total_price).toFixed(2),
+        ...months.reduce((acc, m) => ({ ...acc, [m]: sourceInfo.months[m]?.price || 0 }), {}),
+        grand_total: (totalPrice[source] / dataArray.filter((r: ApiTradeData) => r.source === source).length).toFixed(2),
         _rowSpan: 0,
       });
     });
@@ -86,17 +164,37 @@ const TradeDataAnalysis: React.FC = () => {
 
   const columns: ColumnsType<TradeDataRow> = [
     {
-      title: "Supplier Name",
-      dataIndex: "supplier_name",
-      key: "supplier_name",
+      title: "Source",
+      dataIndex: "source",
+      key: "source",
       fixed: "left",
-      width: 220,
+      width: 180,
       render: (text, record, index) => {
         const obj: any = {
           children: text,
           props: {} as any,
         };
-        // Only show supplier name for the first row (Qty in MT)
+        // Only show source name for the first row (Qty in MT)
+        if (record.type === "Qty in MT") {
+          obj.props.rowSpan = 2;
+        } else {
+          obj.props.rowSpan = 0;
+        }
+        return obj;
+      },
+    },
+    {
+      title: "Region",
+      dataIndex: "region",
+      key: "region",
+      fixed: "left",
+      width: 150,
+      render: (text, record, index) => {
+        const obj: any = {
+          children: text,
+          props: {} as any,
+        };
+        // Only show region name for the first row (Qty in MT)
         if (record.type === "Qty in MT") {
           obj.props.rowSpan = 2;
         } else {
@@ -109,19 +207,30 @@ const TradeDataAnalysis: React.FC = () => {
       title: "Type",
       dataIndex: "type",
       key: "type",
-      // width: 70,
+      fixed: "left",
+      width: 120,
     },
     ...months.map((month) => ({
       title: month.charAt(0).toUpperCase() + month.slice(1),
       dataIndex: month,
       key: month,
-      // width: 90,
-      render: (val:any) => (val !== undefined && val !== 0 ? Math.ceil(val).toFixed(2) : "-"),
+      width: 110,
+      render: (val:any) => (
+        <div style={{ whiteSpace: 'nowrap', textAlign: 'right' }}>
+          {val !== undefined && val !== 0 ? Number(val).toFixed(2) : "-"}
+        </div>
+      ),
     })),
     {
       title: "Grand Total",
       dataIndex: "grand_total",
       key: "grand_total",
+      width: 130,
+      render: (val: any) => (
+        <div style={{ whiteSpace: 'nowrap', textAlign: 'right', fontWeight: 'bold' }}>
+          {val}
+        </div>
+      ),
     },
   ];
 
@@ -158,7 +267,7 @@ const TradeDataAnalysis: React.FC = () => {
         bordered
         rowKey={(_, idx) => idx as Key}
         loading={isLoading}
-        scroll={{ x: 1200 }}
+        scroll={{ x: 1470 }}
       />
     </div>
   );
