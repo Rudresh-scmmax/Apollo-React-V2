@@ -55,6 +55,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		const data = await response.json();
 		if (data.access_token) {
 			localStorage.setItem('token', data.access_token);
+			if (data.role) localStorage.setItem('role', data.role);
+			if (data.userId) localStorage.setItem('userId', data.userId);
+			if (data.email) localStorage.setItem('email', data.email);
 		} else if (data.error) {
 			throw new Error(data.error);
 		} else {

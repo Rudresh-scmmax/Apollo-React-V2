@@ -137,9 +137,9 @@ const DashboardPage: React.FC = () => {
       base_uom_id: 4,
       user_defined_material_desc: null,
       material_category: "Category - D",
-      cas_no: null,
+      cas_no: "56-81-5",
       unspsc_code: null,
-      hsn_code: null
+      hsn_code: "290545"
     }
   );
   console.log("selectedMaterial", selectedMaterial)
@@ -363,33 +363,6 @@ const DashboardPage: React.FC = () => {
 
           {/* Material Selector */}
           <div className="flex gap-4">
-            {/* <MaterialSelect
-              materials={
-                (materials || []).map((m) => ({
-                  material_id: m.material_id ?? "",
-                  material_description: m.material_description,
-                }))
-              }
-              selectedMaterial={
-                selectedMaterial
-                  ? {
-                      material_id: selectedMaterial.material_id ?? "",
-                      material_description: selectedMaterial.material_description,
-                    }
-                  : null
-              }
-              onSelect={(selected) => {
-                if (selected) {
-                  dispatch(
-                    setGlobalSelectedMaterial({
-                      material_description: selected.material_description,
-                      material_id: selected.material_id,
-                    })
-                  );
-                }
-              }}
-            /> */}
-
             <MaterialSelect
               materials={materials || []}
               selectedMaterial={selectedMaterial}
@@ -404,6 +377,61 @@ const DashboardPage: React.FC = () => {
 
           </div>
         </div>
+        {/* Material Information Tiles */}
+        {selectedMaterial && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+            {/* Material Name Tile */}
+            <div className="bg-gradient-to-br from-blue-50 via-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-sm">
+                  <FaCubes className="text-white text-lg" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs font-bold text-blue-600 uppercase tracking-wide mb-1">
+                    Material Name
+                  </h3>
+                  <p className="text-lg font-bold text-gray-800 leading-tight truncate">
+                    {selectedMaterial.material_description}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* CAS Number Tile */}
+            <div className="bg-gradient-to-br from-green-50 via-green-50 to-green-100 border border-green-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="bg-gradient-to-br from-green-500 to-green-600 p-3 rounded-xl shadow-sm">
+                  <FaKey className="text-white text-lg" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs font-bold text-green-600 uppercase tracking-wide mb-1">
+                    CAS Number
+                  </h3>
+                  <p className="text-lg font-bold text-gray-800 leading-tight">
+                    {selectedMaterial.cas_no|| 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* HSN Number Tile */}
+            <div className="bg-gradient-to-br from-purple-50 via-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+              <div className="flex items-center space-x-3">
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-3 rounded-xl shadow-sm">
+                  <FaFileContract className="text-white text-lg" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-xs font-bold text-purple-600 uppercase tracking-wide mb-1">
+                    HSN Number
+                  </h3>
+                  <p className="text-lg font-bold text-gray-800 leading-tight">
+                    {selectedMaterial.hsn_code || 'N/A'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {processingPDFs && processingPDFs.length > 0 && (
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">

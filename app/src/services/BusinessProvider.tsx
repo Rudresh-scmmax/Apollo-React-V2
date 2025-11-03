@@ -849,17 +849,24 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     status: string,
     file?: File
   ): Promise<any> => {
-    const formData = new FormData();
-    formData.append("status", status);
+    const queryParams = new URLSearchParams();
+    queryParams.append("status", status);
+    
+    const url = `${businessApiUrl}/plans/${planId}/status?${queryParams.toString()}`;
+    
     if (file) {
+      const formData = new FormData();
       formData.append("attachment", file);
+      
+      return fetchWrapper(url, {
+        method: "PUT",
+        body: formData,
+      });
+    } else {
+      return fetchWrapper(url, {
+        method: "PUT",
+      });
     }
-
-    return fetchWrapper(`${businessApiUrl}/plans/${planId}/status`, {
-      method: "PUT",
-      body: formData,
-      // ❌ No need for Content-Type, browser sets it automatically
-    });
   };
 
 
@@ -1292,8 +1299,12 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
 
-  // Fetch all users (for assigning plans)
+  // Fetch all users (for assigning plans) - Admin only
   const getAllUsers = async (): Promise<any> => {
+    const role = localStorage.getItem('role');
+    if (role !== 'admin') {
+      throw new Error('Access denied. Admin role required.');
+    }
     return fetchWrapper(`${businessApiUrl}/users`, {
       method: "GET",
     });

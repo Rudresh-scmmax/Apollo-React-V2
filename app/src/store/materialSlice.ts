@@ -19,8 +19,23 @@ interface MaterialState {
   globalSelectedMaterial: Material | null;
 }
 
+// Default material to set on first load when nothing is in persisted state
+const defaultMaterial: Material = {
+  material_id: "100724-000000",
+  material_description: "Glycerine",
+  material_type_id: 1,
+  material_status: "active",
+  base_uom_id: 4,
+  user_defined_material_desc: null,
+  material_category: "Category - D",
+  cas_no: "56-81-5",
+  unspsc_code: null,
+  hsn_code: "290545",
+};
+
 const initialState: MaterialState = {
-  globalSelectedMaterial: selectedMaterial?.material?.globalSelectedMaterial,
+  globalSelectedMaterial:
+    selectedMaterial?.material?.globalSelectedMaterial || defaultMaterial,
 };
 
 const materialSlice = createSlice({
