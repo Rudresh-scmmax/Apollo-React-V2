@@ -31,7 +31,7 @@ type APIMaterial = {
 const MaterialSheetAntd = () => {
   const { getMaterialSubtituteData, getRegions, getPlantCode } = useBusinessAPI();
   const selectedMaterial = useSelector(
-    (state: RootState) => state.material.globalSelectedMaterial
+    (state: RootState) => state?.material?.globalSelectedMaterial
   );
   const [showSpendAnalysis, setShowSpendAnalysis] = useState(false);
   const [showMaterialPriceHistory, setShowMaterialPriceHistory] = useState(false);

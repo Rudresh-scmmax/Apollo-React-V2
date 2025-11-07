@@ -18,16 +18,20 @@ const ShutdownTracker: React.FC<any> = () => {
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
-  const { data: regions } = useQuery<string[]>({
-    queryKey: ["regions", selectedMaterial?.material_id],
-    queryFn: () => getShutdownRegions(selectedMaterial?.material_id || ""),
-    enabled: !!selectedMaterial?.material_id,
-  });
+
+  const { data: regions } = useQuery<{location_id: number, location_name: string}[]>({
+      queryKey: ["regions", selectedMaterial?.material_id],
+      queryFn: () =>
+        getShutdownRegions(selectedMaterial?.material_id || ""),
+      enabled: !!selectedMaterial?.material_id,
+    });
 
   const [selectedRegion, setSelectedRegion] = useState<string>("");
   const [editing, setEditing] = useState<{ key: number; field: string } | null>(null);
   const [editValue, setEditValue] = useState<string | null>(null);
   const [updating, setUpdating] = useState<boolean>(false);
+    const [selectedRegionId, setSelectedRegionId] = useState<number | null>(null);
+  
 
   useEffect(() => {
     if (!selectedMaterial) {
@@ -35,9 +39,10 @@ const ShutdownTracker: React.FC<any> = () => {
     }
   }, [selectedMaterial, navigate]);
 
-  useEffect(() => {
+useEffect(() => {
     if (regions && regions.length > 0 && !selectedRegion) {
-      setSelectedRegion(regions[0]);
+      setSelectedRegion(regions[0].location_name);
+      setSelectedRegionId(regions[0].location_id);
     }
   }, [regions, selectedRegion]);
 
@@ -45,11 +50,11 @@ const ShutdownTracker: React.FC<any> = () => {
     queryKey: [
       "shutdownTracking",
       selectedMaterial?.material_id,
-      selectedRegion,
+      selectedRegionId,
     ],
     queryFn: () =>
-      getShutdownTracking(selectedMaterial?.material_id, selectedRegion),
-    enabled: !!selectedMaterial?.material_id && !!selectedRegion,
+      getShutdownTracking(selectedMaterial?.material_id, selectedRegionId?.toString() || ""),
+    enabled: !!selectedMaterial?.material_id && !!selectedRegionId,
   });
 
   // Helper to handle update
@@ -235,11 +240,17 @@ const ShutdownTracker: React.FC<any> = () => {
         <h1 className="text-2xl font-bold text-gray-800">
           Shutdown Tracker for: {selectedMaterial?.material_description || "All Material"}
         </h1>
-        <RegionSelector
-          regions={regions}
-          selectedRegion={selectedRegion}
-          setSelectedRegion={setSelectedRegion}
-        />
+         <RegionSelector
+              regions={regions}
+              selectedRegion={selectedRegion}
+              setSelectedRegion={(regionName: string) => {
+                setSelectedRegion(regionName);
+                const region = regions?.find(r => r.location_name === regionName);
+                if (region) {
+                  setSelectedRegionId(region.location_id);
+                }
+              }}
+            />
       </div>
 
       <Table

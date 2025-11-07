@@ -83,7 +83,7 @@ interface BusinessContextType {
   ) => Promise<any[]>;
   getShutdownTracking: (
     selectedMaterial?: string,
-    region?: string
+    location_id?: string
   ) => Promise<any[]>;
   getHistoricalPrices: (materalId: string, location_id: string) => Promise<any>;
   getProcurementPlan: (
@@ -121,7 +121,7 @@ interface BusinessContextType {
     year?: string;
   }) => Promise<any[]>;
   getSupplierRegion: (material_id: string) => Promise<string[]>;
-  getShutdownRegions: (material_id: string) => Promise<string[]>;
+  getShutdownRegions: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
   getInventoryLevels: (materalId: string) => Promise<any>;
   getVendorWiseActionPlan: (materalId: string) => Promise<any>;
   getVendorKeyInformation: (materalId: string) => Promise<any>;
@@ -285,11 +285,11 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getShutdownRegions = async (
     material_id: string
-  ): Promise<string[]> => {
+  ): Promise<{location_id: number, location_name: string}[]> => {
     const queryParams = new URLSearchParams();
     queryParams.append("material_id", material_id);
     return fetchWrapper(
-      `${businessApiUrl}/shutdown_regions?${queryParams.toString()}`,
+      `${businessApiUrl}/shutdown-regions?${queryParams.toString()}`,
       {
         method: "GET",
       }
@@ -602,12 +602,12 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getShutdownTracking = async (
     selectedMaterial?: string,
-    region?: string
+    location_id?: string
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
     if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
-    if (region) queryParams.append("region", region);
+    if (location_id) queryParams.append("location_id", location_id);
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
