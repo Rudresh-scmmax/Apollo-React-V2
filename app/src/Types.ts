@@ -47,11 +47,9 @@ interface PriceHistoryTrendResponse {
 }
 
 type ShutdownTrackingUpdateInput = {
-  material_id: string;
-  region: string;
-  date: string; // in YYYY-MM-DD format
-  shutdown_from?: string; // optional ISO datetime or date string
-  shutdown_to?: string;   // optional ISO datetime or date string
+  id: string;
+  shutdown_from?: string;
+  shutdown_to?: string;
 };
 
 interface VendorKeyInfoUpdate {

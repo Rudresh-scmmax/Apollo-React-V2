@@ -444,6 +444,8 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
+
+ 
   const getMaterialPrices = async (
     selectedMaterial?: string,
     location_id?: string,
@@ -622,17 +624,14 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   const updateShutdownTracking = async (
     updateData: ShutdownTrackingUpdateInput
   ): Promise<any> => {
-    const { material_id, region, date, shutdown_from, shutdown_to } = updateData;
+    const { id, shutdown_from, shutdown_to } = updateData;
 
-    if (!material_id || !region || !date) {
-      throw new Error("Fields 'material_id', 'region', and 'date' are required.");
-    }
 
     if (shutdown_from === undefined && shutdown_to === undefined) {
       throw new Error("At least one of 'shutdown_from' or 'shutdown_to' must be provided.");
     }
 
-    return fetchWrapper(`${businessApiUrl}/shutdown-tracking`, {
+    return fetchWrapper(`${businessApiUrl}/shutdown-tracking/${id}`, {
       method: "PUT",
       headers: {
         "Content-Type": "application/json",
