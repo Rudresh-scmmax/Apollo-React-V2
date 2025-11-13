@@ -117,6 +117,9 @@ const IndustryPorterAnalysis: React.FC = () => {
     // Use edited data if in edit mode, otherwise use original data
     const porters = isEditMode ? editedData : data.analysis_json;
 
+    // Check if porters exists and is an object
+    if (!porters || typeof porters !== 'object') return null;
+
     const keys = [
       "bargaining_power_suppliers",
       "threat_of_substitution",
@@ -129,23 +132,23 @@ const IndustryPorterAnalysis: React.FC = () => {
     if (!allPresent) return null;
 
     return keys.map((key) => {
-      const force = porters[key];
+      const force = porters[key] || {};
       let color = "text-lime-700";
       let bar = "w-2/5 bg-lime-400";
-      if (force.intensity?.toLowerCase().includes("high")) {
+      if (force?.intensity?.toLowerCase().includes("high")) {
         color = "text-lime-700";
         bar = "w-4/5 bg-lime-600";
-      } else if (force.intensity?.toLowerCase().includes("low")) {
+      } else if (force?.intensity?.toLowerCase().includes("low")) {
         color = "text-lime-700";
         bar = "w-1/5 bg-lime-200";
       }
       return {
-        title: force.title || key,
+        title: force?.title || key,
         icon: forceIconMap[key] || null,
         color,
-        intensity: force.intensity || "",
+        intensity: force?.intensity || "",
         bar,
-        description: force.description || "",
+        description: force?.description || "",
         key,
       };
     });

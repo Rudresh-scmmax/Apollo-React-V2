@@ -41,7 +41,7 @@ const QuotationComparison: React.FC = () => {
         const file = fileObj.originFileObj || fileObj;
         formData.append("files", file);
       });
-      formData.append("materialId", selectedMaterial.material_id);
+      formData.append("material_id", selectedMaterial.material_id);
 
       const res = await uploadQuotationPDF(formData);
 

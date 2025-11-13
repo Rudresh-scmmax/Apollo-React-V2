@@ -69,6 +69,7 @@ const InventoryLevel: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
           Inventory Level for: {selectedMaterial?.material_description || "All Material"}
+          {selectedMaterial?.cas_no && ` (${selectedMaterial.cas_no})`}
         </h1>
       </div>
       <Table

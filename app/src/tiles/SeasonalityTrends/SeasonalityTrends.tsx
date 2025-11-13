@@ -31,7 +31,7 @@ const SeasonalityTrends: React.FC = () => {
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
-  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedLocationId, setSelectedLocationId] = useState<number | null>(null);
   const [selectedYears, setSelectedYears] = useState<number[]>([]);
 
   const { data: regions } = useQuery<{location_id: number, location_name: string}[]>({
@@ -54,14 +54,14 @@ const SeasonalityTrends: React.FC = () => {
     queryKey: [
       "seasonality-trends",
       selectedMaterial?.material_id,
-      selectedRegion,
+      selectedLocationId,
     ],
     queryFn: () =>
       getSeasonalityTrends(
         selectedMaterial?.material_id!,
-        selectedRegion
+        selectedLocationId!
       ),
-    enabled: !!selectedMaterial?.material_id && !!selectedRegion,
+    enabled: !!selectedMaterial?.material_id && selectedLocationId !== null,
   });
 
   const seasonalityData: SeasonalityData = (seasonalityDataRaw && typeof seasonalityDataRaw === 'object' && 'months' in seasonalityDataRaw && 'years' in seasonalityDataRaw && 'regions' in seasonalityDataRaw)
@@ -75,10 +75,10 @@ const SeasonalityTrends: React.FC = () => {
   }, [selectedMaterial, navigate]);
 
   useEffect(() => {
-    if (regions && regions.length > 0 && !selectedRegion) {
-      setSelectedRegion(regions[0].location_name);
+    if (regions && regions.length > 0 && selectedLocationId === null) {
+      setSelectedLocationId(regions[0].location_id);
     }
-  }, [regions, selectedRegion]);
+  }, [regions, selectedLocationId]);
 
   useEffect(() => {
     if (seasonalityData.years && seasonalityData.years.length > 0) {
@@ -109,8 +109,13 @@ const SeasonalityTrends: React.FC = () => {
         </h1>
         <RegionSelector
           regions={regions}
-          selectedRegion={selectedRegion}
-          setSelectedRegion={setSelectedRegion}
+          selectedRegion={regions?.find(r => r.location_id === selectedLocationId)?.location_name || ""}
+          setSelectedRegion={(locationName) => {
+            const region = regions?.find(r => r.location_name === locationName);
+            if (region) {
+              setSelectedLocationId(region.location_id);
+            }
+          }}
         />
       </div>
       <div className="flex items-center mb-4 gap-4">

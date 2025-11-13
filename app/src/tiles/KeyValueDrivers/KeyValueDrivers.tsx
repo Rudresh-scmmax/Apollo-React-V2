@@ -1,18 +1,21 @@
 import React, { useState } from "react";
 import ReactApexChart from "react-apexcharts";
 import { useBusinessAPI, Material as BusinessMaterial } from "../../services/BusinessProvider";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../store/store";
+import { setGlobalSelectedMaterial } from "../../store/materialSlice";
 import { useQuery } from "@tanstack/react-query";
+import MaterialSelect from "../../common/MaterialSelect";
 
 const KeyValueDrivers: React.FC = () => {
   const { getCorrelationMaterialPrice, getMaterials } = useBusinessAPI();
+  const dispatch = useDispatch();
   const selectedMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
   // State for manual correlated material selection
-  const [manualCorrelated, setManualCorrelated] = useState<string>("");
+  const [manualCorrelated, setManualCorrelated] = useState<BusinessMaterial | null>(null);
 
   const { data: materials, isLoading: isLoadingMaterials } = useQuery<BusinessMaterial[]>({
     queryKey: ["materials"],
@@ -24,12 +27,12 @@ const KeyValueDrivers: React.FC = () => {
     queryKey: [
       "correlation-material-price",
       selectedMaterial?.material_id,
-      manualCorrelated,
+      manualCorrelated?.material_id,
     ],
     queryFn: () =>
       getCorrelationMaterialPrice(
         selectedMaterial?.material_id || "",
-        manualCorrelated || undefined
+        manualCorrelated?.material_id || undefined
       ),
     enabled: !!selectedMaterial?.material_id,
   });
@@ -96,25 +99,24 @@ const KeyValueDrivers: React.FC = () => {
     <div className="container mx-auto p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-800">
-          Key Value Drivers for: {selectedMaterial?.material_description}
+          Key Value Drivers
         </h1>
-        <div>
-          <label className="mr-2 font-medium">Compare with:</label>
-          <select
-            className="border border-gray-300 rounded-lg px-4 py-2 bg-white"
-            value={manualCorrelated}
-            onChange={(e) => setManualCorrelated(e.target.value)}
-            disabled={isLoadingMaterials}
-          >
-            <option value="">Auto (Most Correlated)</option>
-            {materials
-              ?.filter((mat) => mat.material_id !== selectedMaterial?.material_id)
-              .map((material) => (
-                <option key={material.material_id} value={material.material_id}>
-                  {material.material_description}
-                </option>
-              ))}
-          </select>
+        <div className="flex gap-4 items-center">
+          <div className="flex items-center gap-2">
+            <label className="font-medium">Compare with:</label>
+            <MaterialSelect
+              materials={
+                materials?.filter(
+                  (mat) => mat.material_id !== selectedMaterial?.material_id
+                ) || []
+              }
+              selectedMaterial={manualCorrelated}
+              onSelect={(selected) => {
+                setManualCorrelated(selected);
+              }}
+              placeholder="Auto (Most Correlated)"
+            />
+          </div>
         </div>
       </div>
       <div className="flex bg-white rounded-xl shadow p-8">

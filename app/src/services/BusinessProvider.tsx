@@ -142,7 +142,7 @@ interface BusinessContextType {
   updateShutdownTracking: (
     updateData: ShutdownTrackingUpdateInput
   ) => Promise<any>;
-  getSeasonalityTrends: (material_id: string, region: string) => Promise<any>;
+  getSeasonalityTrends: (material_id: string, location_id: number) => Promise<any>;
   updateVendorKeyInformation: (
     rowData: VendorKeyInfoUpdate) => Promise<any>;
   getVendors: (material_id: string) => Promise<string[]>;
@@ -980,7 +980,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   ): Promise<any> => {
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("materalId", material_id);
+    formData.append("material_id", material_id);
 
     return fetchWrapper(`${businessApiUrl}/fact-pack-upload-pdf`, {
       method: "POST",
@@ -1165,10 +1165,10 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const getSeasonalityTrends = async (material_id: string, region: string): Promise<any> => {
+  const getSeasonalityTrends = async (material_id: string, location_id: number): Promise<any> => {
     const queryParams = new URLSearchParams();
     queryParams.append("material_id", material_id);
-    queryParams.append("region", region);
+    queryParams.append("location_id", location_id.toString());
     return fetchWrapper(`${businessApiUrl}/seasonality-trends?${queryParams.toString()}`, {
       method: "GET",
     });

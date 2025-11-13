@@ -8,9 +8,11 @@ import { useNavigate } from "react-router-dom";
 
 interface VendorData {
   key: number;
+  id?: number; // ID from backend for easier updates
+  material_code?: string; // Material code from backend
   supplier_name: string;
   supplier_site: string;
-  capacity_mn_tons: string;
+  capacity_mn_tons: string | number;
   capacity_expansion_plans: string;
   fta_benefit: string;
   remarks: string;
@@ -36,12 +38,20 @@ const EditableCell: React.FC<EditableCellProps> = ({
   onSave,
   ...restProps
 }) => {
-  const [value, setValue] = useState(record?.[dataIndex as keyof VendorData] || '');
+  const getInitialValue = () => {
+    const val = record?.[dataIndex as keyof VendorData];
+    if (val === null || val === undefined) return '';
+    // Convert number to string for input field
+    return String(val);
+  };
+
+  const [value, setValue] = useState(getInitialValue());
   const [isEditing, setIsEditing] = useState(editing);
 
   useEffect(() => {
     if (record && dataIndex) {
-      setValue(record[dataIndex as keyof VendorData] || '');
+      const val = record[dataIndex as keyof VendorData];
+      setValue(val === null || val === undefined ? '' : String(val));
     }
   }, [record, dataIndex]);
 
@@ -58,7 +68,8 @@ const EditableCell: React.FC<EditableCellProps> = ({
       handleSave();
     } else if (e.key === 'Escape') {
       if (record && dataIndex) {
-        setValue(record[dataIndex as keyof VendorData] || '');
+        const val = record[dataIndex as keyof VendorData];
+        setValue(val === null || val === undefined ? '' : String(val));
       }
       setIsEditing(false);
     }
@@ -124,7 +135,9 @@ const VendorKeyInformation: React.FC<any> = () => {
   useEffect(() => {
     if (vendorInfo) {
       const formattedData = vendorInfo.map((item: any, index: number) => ({
-        key: index,
+        key: item.id || index, // Use id as key if available, fallback to index
+        id: item.id, // Store ID for updates
+        material_code: item.material_code, // Store material_code
         supplier_name: item.supplier_name,
         supplier_site: item.supplier_site,
         capacity_mn_tons: item.capacity ?? "",
@@ -139,26 +152,69 @@ const VendorKeyInformation: React.FC<any> = () => {
   const handleSave = async (updatedRecord: VendorData) => {
     try {
       // Prepare the data for the API call
-      const updateData = {
-        material_id: selectedMaterial?.material_id,
-        supplier_name: updatedRecord.supplier_name,
-        supplier_site: updatedRecord.supplier_site,
-        capacity_mn_tons: updatedRecord.capacity_mn_tons,
-        capacity_expansion_plans: updatedRecord.capacity_expansion_plans,
-        fta_benefit: updatedRecord.fta_benefit,
-        remarks: updatedRecord.remarks,
-      };
+      // Use id if available (preferred method), otherwise use identifiers
+      const updateData: any = {};
+      
+      if (updatedRecord.id) {
+        // Preferred: Use ID to identify record directly
+        updateData.id = updatedRecord.id;
+      } else {
+        // Fallback: Use identifiers (material_code, supplier_name, supplier_site)
+        updateData.material_code = updatedRecord.material_code || selectedMaterial?.material_id;
+        updateData.supplier_name = updatedRecord.supplier_name;
+        updateData.supplier_site = updatedRecord.supplier_site;
+      }
+      
+      // Only include fields that have changed or are being updated
+      // Convert capacity_mn_tons to number if it's a valid number string
+      if (updatedRecord.capacity_mn_tons !== undefined && updatedRecord.capacity_mn_tons !== null && updatedRecord.capacity_mn_tons !== "") {
+        const capacityValue = typeof updatedRecord.capacity_mn_tons === 'string' 
+          ? parseFloat(updatedRecord.capacity_mn_tons) 
+          : updatedRecord.capacity_mn_tons;
+        if (!isNaN(capacityValue)) {
+          updateData.capacity = capacityValue;
+        }
+      }
+      
+      if (updatedRecord.capacity_expansion_plans !== undefined) {
+        updateData.capacity_expansion_plans = updatedRecord.capacity_expansion_plans;
+      }
+      if (updatedRecord.fta_benefit !== undefined) {
+        updateData.fta_benefit = updatedRecord.fta_benefit;
+      }
+      if (updatedRecord.remarks !== undefined) {
+        updateData.remarks = updatedRecord.remarks;
+      }
 
       // Call the API to update the data
-      await updateVendorKeyInformation(updateData);
+      const response = await updateVendorKeyInformation(updateData);
       
-      // Update the local state only if API call is successful
-      const newDataSource = dataSource.map((item) =>
-        item.key === updatedRecord.key ? updatedRecord : item
-      );
-      setDataSource(newDataSource);
+      // Update the local state with the response data if available
+      if (response?.data) {
+        const updatedData = response.data;
+        const newDataSource = dataSource.map((item) =>
+          item.key === updatedRecord.key 
+            ? {
+                ...item,
+                id: updatedData.id || item.id,
+                material_code: updatedData.material_code || item.material_code,
+                capacity_mn_tons: updatedData.capacity ?? "",
+                capacity_expansion_plans: updatedData.capacity_expansion_plans ?? "",
+                fta_benefit: updatedData.fta_benefit ?? "",
+                remarks: updatedData.remarks ?? "",
+              }
+            : item
+        );
+        setDataSource(newDataSource);
+      } else {
+        // Fallback: Update with the record we sent
+        const newDataSource = dataSource.map((item) =>
+          item.key === updatedRecord.key ? updatedRecord : item
+        );
+        setDataSource(newDataSource);
+      }
+      
       setEditingKey(null);
-      
       message.success('Data updated successfully!');
     } catch (error) {
       console.error('Error updating vendor information:', error);

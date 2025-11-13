@@ -53,12 +53,15 @@ type ShutdownTrackingUpdateInput = {
 };
 
 interface VendorKeyInfoUpdate {
-  supplier_name: string;
-  supplier_site: string;
-  capacity_mn_tons?: string;
-  capacity_expansion_plans?: string;
-  fta_benefit?: string;
-  remarks?: string;
+  id?: number; // Preferred: Use ID to identify record directly
+  material_code?: string; // Required if id not provided (identifier, not updatable)
+  supplier_name?: string; // Required if id not provided (identifier, not updatable)
+  supplier_site?: string; // Required if id not provided (identifier, not updatable)
+  capacity?: number; // Capacity (Mn Tons) - updatable (can also use capacity_mn_tons alias)
+  capacity_mn_tons?: number; // Alias for capacity
+  capacity_expansion_plans?: string; // Capacity Expansion Plans - updatable
+  fta_benefit?: string; // FTA Benefit - updatable
+  remarks?: string; // Remarks - updatable
 }
 
 interface NegotiationData {
