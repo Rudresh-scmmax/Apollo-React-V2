@@ -3,6 +3,10 @@ import { motion } from 'framer-motion';
 import { FaSave, FaCheck } from 'react-icons/fa';
 import { useBusinessAPI } from '../services/BusinessProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import MaterialSelect from '../common/MaterialSelect';
+import RegionSelector from '../common/RegionSelector';
+import CurrencySelect from '../common/CurrencySelect';
+import type { Material } from '../services/BusinessProvider';
 
 interface UserPreferences {
   material: string;
@@ -12,7 +16,13 @@ interface UserPreferences {
 }
 
 const UserPreferencesPage: React.FC = () => {
-  const { getUserPreferences, updateUserPreferences, getCurrencyMaster } = useBusinessAPI();
+  const {
+    getUserPreferences,
+    updateUserPreferences,
+    getCurrencyMaster,
+    getMaterials,
+    getAllRegions,
+  } = useBusinessAPI();
   const queryClient = useQueryClient();
   
   const [preferences, setPreferences] = useState<UserPreferences>({
@@ -22,6 +32,8 @@ const UserPreferencesPage: React.FC = () => {
     negotiationStyle: 'balanced',
   });
 
+  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
+  const [selectedRegion, setSelectedRegion] = useState<string>('');
   const [isSaved, setIsSaved] = useState(false);
 
   // Fetch user preferences
@@ -30,8 +42,24 @@ const UserPreferencesPage: React.FC = () => {
     queryFn: getUserPreferences,
   });
 
+  // Fetch materials
+  const { data: materials, isLoading: materialsLoading } = useQuery<Material[]>({
+    queryKey: ['materials'],
+    queryFn: getMaterials,
+  });
+
+  // Fetch all regions
+  const { data: regions, isLoading: regionsLoading } = useQuery<
+    { location_id: number; location_name: string }[]
+  >({
+    queryKey: ['regions'],
+    queryFn: getAllRegions,
+  });
+
   // Fetch currencies from API
-  const { data: currencies, isLoading: currenciesLoading } = useQuery({
+  const { data: currencies, isLoading: currenciesLoading } = useQuery<
+    { currency_code: string; currency_name: string }[]
+  >({
     queryKey: ['currencyMaster'],
     queryFn: getCurrencyMaster,
   });
@@ -46,6 +74,30 @@ const UserPreferencesPage: React.FC = () => {
     }
   }, [userPrefs]);
 
+  // Initialize selected material once materials load
+  useEffect(() => {
+    if (materials && materials.length > 0 && !selectedMaterial) {
+      const defaultMaterial = materials[0];
+      setSelectedMaterial(defaultMaterial);
+      setPreferences(prev => ({
+        ...prev,
+        material: defaultMaterial.material_id,
+      }));
+    }
+  }, [materials, selectedMaterial]);
+
+  // Initialize selected region when regions load
+  useEffect(() => {
+    if (regions && regions.length > 0 && !selectedRegion) {
+      const defaultRegion = regions[0].location_name;
+      setSelectedRegion(defaultRegion);
+      setPreferences(prev => ({
+        ...prev,
+        region: defaultRegion,
+      }));
+    }
+  }, [regions, selectedRegion]);
+
   // Update preferences mutation
   const updatePreferencesMutation = useMutation({
     mutationFn: updateUserPreferences,
@@ -58,30 +110,6 @@ const UserPreferencesPage: React.FC = () => {
       console.error('Failed to save preferences:', error);
     }
   });
-
-  const materials = [
-    { value: 'glycerine', label: 'Glycerine' },
-    { value: 'phenol', label: 'Phenol' },
-    { value: 'acetic-acid', label: 'Acetic Acid' },
-    { value: 'acetone', label: 'Acetone' },
-    { value: 'methanol', label: 'Methanol' },
-  ];
-
-  const regions = [
-    { value: 'north-america', label: 'North America' },
-    { value: 'south-america', label: 'South America' },
-    { value: 'europe', label: 'Europe' },
-    { value: 'asia', label: 'Asia' },
-    { value: 'middle-east', label: 'Middle East' },
-    { value: 'africa', label: 'Africa' },
-    { value: 'oceania', label: 'Oceania' },
-  ];
-
-  // Transform API currencies to component format
-  const currencyOptions = currencies?.map(currency => ({
-    value: currency.currency_code,
-    label: `${currency.currency_code} - ${currency.currency_name}`
-  })) || [];
 
   const negotiationStyles = [
     {
@@ -130,54 +158,49 @@ const UserPreferencesPage: React.FC = () => {
             {/* Material Selection */}
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700">Primary Material</label>
-              <select
-                value={preferences.material}
-                onChange={(e) => handleChange('material', e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#a0bf3f] focus:border-transparent transition-all outline-none"
-              >
-                {materials.map((material) => (
-                  <option key={material.value} value={material.value}>
-                    {material.label}
-                  </option>
-                ))}
-              </select>
+              {materialsLoading ? (
+                <div className="text-sm text-gray-500">Loading materials...</div>
+              ) : (
+                <div className="user-pref-material-select w-full">
+                  <MaterialSelect
+                    materials={materials || []}
+                    selectedMaterial={selectedMaterial}
+                    onSelect={(material) => {
+                      setSelectedMaterial(material);
+                      handleChange('material', material?.material_id || '');
+                    }}
+                    placeholder="Select Material"
+                  />
+                </div>
+              )}
             </div>
 
             {/* Region Selection */}
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700">Region</label>
-              <select
-                value={preferences.region}
-                onChange={(e) => handleChange('region', e.target.value)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#a0bf3f] focus:border-transparent transition-all outline-none"
-              >
-                {regions.map((region) => (
-                  <option key={region.value} value={region.value}>
-                    {region.label}
-                  </option>
-                ))}
-              </select>
+              {regionsLoading ? (
+                <div className="text-sm text-gray-500">Loading regions...</div>
+              ) : (
+                <RegionSelector
+                  regions={regions}
+                  selectedRegion={selectedRegion}
+                  setSelectedRegion={(regionName) => {
+                    setSelectedRegion(regionName);
+                    handleChange('region', regionName);
+                  }}
+                />
+              )}
             </div>
 
             {/* Currency Selection */}
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700">Currency</label>
-              <select
-                value={preferences.currency}
-                onChange={(e) => handleChange('currency', e.target.value)}
-                disabled={currenciesLoading}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-[#a0bf3f] focus:border-transparent transition-all outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {currenciesLoading ? (
-                  <option>Loading currencies...</option>
-                ) : (
-                  currencyOptions.map((currency) => (
-                    <option key={currency.value} value={currency.value}>
-                      {currency.label}
-                    </option>
-                  ))
-                )}
-              </select>
+              <CurrencySelect
+                currencies={currencies || []}
+                selectedCurrency={preferences.currency}
+                onChange={(value) => handleChange('currency', value)}
+                loading={currenciesLoading}
+              />
             </div>
 
             {/* Negotiation Style */}
@@ -259,6 +282,13 @@ const UserPreferencesPage: React.FC = () => {
           </p>
         </motion.div>
       </motion.div>
+      <style>
+        {`
+          .user-pref-material-select > div {
+            width: 100% !important;
+          }
+        `}
+      </style>
     </div>
   );
 };

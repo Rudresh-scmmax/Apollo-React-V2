@@ -87,14 +87,19 @@ interface BusinessContextType {
   ) => Promise<any[]>;
   getHistoricalPrices: (materalId: string, location_id: string) => Promise<any>;
   getProcurementPlan: (
-    PlantCode?: string,
-    selectedMaterial?: string
+    plantCode: string,
+    materialId?: string
   ) => Promise<ProcurementPlanResponse>;
+  getProcurementPlanPlants: (material_id: string) => Promise<string[]>;
+  updateProcurementPlan: (
+    payload: ProcurementPlanUpdatePayload
+  ) => Promise<any>;
   getPlantCode: (material_id: string, notnull_column?: string) => Promise<{plant_id: number, plant_name: string}[]>;
   getMinutesOfMeeting: (materalId: string) => Promise<any>;
   getJointDevelopmentProjects: (materalId: string) => Promise<any>;
   getMultiplePointEngagemeants: (materalId: string) => Promise<any>;
   getRegions: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
+  getAllRegions: () => Promise<{location_id: number, location_name: string}[]>;
   getNewsLocations: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
   getDemandSupplyLocations: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
   uploadEmailContent: (data: {
@@ -181,6 +186,14 @@ interface BusinessProviderProps {
   children: React.ReactNode;
 }
 
+type ProcurementPlanUpdatePayload = {
+  plant_code: string;
+  material_id: string;
+  safety_stock?: number;
+  opening_stock?: number;
+  monthly_prices: Record<string, number>;
+};
+
 export type StrategyRecommendation = {
   id: number;
   material_id: string;
@@ -255,6 +268,14 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
         method: "GET",
       }
     );
+  };
+
+  const getAllRegions = async (): Promise<
+    { location_id: number; location_name: string }[]
+  > => {
+    return fetchWrapper(`${businessApiUrl}/get-regions`, {
+      method: "GET",
+    });
   };
 
   const getNewsLocations = async (
@@ -642,20 +663,58 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
 
   const getProcurementPlan = async (
-    PlantCode?: string,
-    selectedMaterial?: string
+    plantCode: string,
+    materialCode?: string
   ): Promise<ProcurementPlanResponse> => {
+    if (!plantCode) {
+      throw new Error("plantCode is required to fetch procurement plans.");
+    }
+
     const queryParams = new URLSearchParams();
+    queryParams.append("plant_code", plantCode);
+    if (materialCode) queryParams.append("material_id", materialCode);
 
-    if (PlantCode) queryParams.append("plant_code", PlantCode);
-    if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
+    return fetchWrapper(
+      `${businessApiUrl}/procurement-plan?${queryParams.toString()}`,
+      {
+        method: "GET",
+      }
+    );
+  };
 
-    const queryString = queryParams.toString()
-      ? `?${queryParams.toString()}`
-      : "";
+  const getProcurementPlanPlants = async (
+    materialCode: string
+  ): Promise<string[]> => {
+    if (!materialCode) {
+      throw new Error("materialCode is required to fetch procurement plants.");
+    }
 
-    return fetchWrapper(`${businessApiUrl}/procurement-plan${queryString}`, {
-      method: "GET",
+    const queryParams = new URLSearchParams();
+    queryParams.append("material_id", materialCode);
+
+    return fetchWrapper(
+      `${businessApiUrl}/procurement-plans/plants?${queryParams.toString()}`,
+      {
+        method: "GET",
+      }
+    );
+  };
+
+  const updateProcurementPlan = async (
+    payload: ProcurementPlanUpdatePayload
+  ): Promise<any> => {
+    if (!payload.plant_code || !payload.material_id) {
+      throw new Error(
+        "plant_code and material_id are required to update procurement plans."
+      );
+    }
+
+    return fetchWrapper(`${businessApiUrl}/procurement-plan`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
   };
 
@@ -1333,6 +1392,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     updateMaterialPriceHistoryBulk,
     getMaterialPrices,
     getRegions,
+    getAllRegions,
     getNewsLocations,
     getDemandSupplyLocations,
     getRecomendations,
@@ -1346,6 +1406,8 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     getHistoricalPrices,
     getShutdownTracking,
     getProcurementPlan,
+    getProcurementPlanPlants,
+    updateProcurementPlan,
     getPlantCode,
     uploadNewsHighlight,
     getMinutesOfMeeting,

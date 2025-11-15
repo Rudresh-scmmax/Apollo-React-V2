@@ -37,15 +37,24 @@ const RegistrationPage = () => {
 	const [passwordConfirmation, setPasswordConfirmation] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const [successMessage, setSuccessMessage] = useState<string | null>(null);
 	const { register } = useAuth();
 
 	const handleRegister = async () => {
 		setLoading(true);
+		setError(null);
+		setSuccessMessage(null);
 		try {
-			await register({ email, password });
+			const result = await register({ email, password });
 			setPassword("");
 			setEmail("");
-			navigate("/projects");
+			setPasswordConfirmation("");
+			const message =
+				result?.message ||
+				result?.detail ||
+				"Account created successfully. Redirecting to login...";
+			setSuccessMessage(message);
+			setTimeout(() => navigate("/login"), 2000);
 		} catch (error: any) {
 			setError(error.message);
 			return;
@@ -139,6 +148,11 @@ const RegistrationPage = () => {
 				{error && (
 					<div className={formStyles.error}>
 						{error}
+					</div>
+				)}
+				{successMessage && (
+					<div className="text-green-700 text-sm text-center mt-2 font-medium">
+						{successMessage}
 					</div>
 				)}
 			</form>

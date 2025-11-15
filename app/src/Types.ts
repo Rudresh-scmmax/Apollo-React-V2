@@ -28,16 +28,18 @@ interface DailyUpdate {
 
 
 interface ProcurementPlanData {
-  material_id: string;
-  material_description: string;
+  id: string;
+  material_code: string;
+  material_description?: string | null;
   plant_code: string;
-  safety_stock: string;
-  opening_stock: string;
-  [month: string]: string; // dynamic months
+  safety_stock?: number | null;
+  opening_stock?: number | null;
+  [label: string]: string | number | null | undefined;
 }
 
 interface ProcurementPlanResponse {
   message: string;
+  months: string[];
   data: ProcurementPlanData[];
 }
 

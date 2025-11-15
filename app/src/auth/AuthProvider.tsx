@@ -8,7 +8,7 @@ interface AuthContextType {
 	isExpired: () => boolean;
 	login: ({ email, password }: { email: string; password: string }) => Promise<void>;
 	logout: () => void;
-	register: ({ email, password }: { email: string; password: string }) => Promise<void>;
+	register: ({ email, password }: { email: string; password: string }) => Promise<any>;
 	isAuthenticated: () => boolean;
 	forgotPassword: ({ email }: { email: string }) => Promise<void>;
 	resetPassword: ({ token, newPassword }: { token: string; newPassword: string }) => Promise<void>;
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 		}
 	};
 
-	const register = async ({ email, password }: { email: string; password: string }): Promise<void> => {
+	const register = async ({ email, password }: { email: string; password: string }): Promise<any> => {
 		const response = await fetch(`${authApiUrl}/register`, {
 			method: 'POST',
 			headers: {
@@ -73,14 +73,24 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			},
 			body: JSON.stringify({ email, password }),
 		});
-		const data = await response.json();
-		if (data.token) {
-			localStorage.setItem('token', data.token);
-		} else if (data.error) {
-			throw new Error(data.error);
-		} else {
-			throw new Error('Unknown error');
+
+		let data: any = {};
+		try {
+			data = await response.json();
+		} catch (_) {
+			// ignore JSON parse issues, handle via status check below
 		}
+
+		if (!response.ok) {
+			const message =
+				data?.error ||
+				data?.message ||
+				data?.detail ||
+				'Failed to create account';
+			throw new Error(message);
+		}
+
+		return data;
 	};
 
 	const logout = (): void => {
