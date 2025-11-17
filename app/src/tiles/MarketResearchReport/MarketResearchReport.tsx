@@ -25,6 +25,7 @@ import MaterialSelect from "../../common/MaterialSelect";
 const MarketResearchReport: React.FC = () => {
   const queryClient = useQueryClient();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const getGlobalSetMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial
@@ -62,6 +63,10 @@ const MarketResearchReport: React.FC = () => {
     onSuccess: (response) => {
       setSelectedFile(null);
       setNewmaterialId("");
+      // Clear the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
 
       if (response?.id) {
         setProcessingPdfIds((prev: any) => [
@@ -201,7 +206,10 @@ const MarketResearchReport: React.FC = () => {
 
             <div className="relative" ref={dropdownRef}>
               <button
-                className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                className="flex items-center gap-2 text-white px-4 py-2 rounded-lg transition-colors"
+                style={{ backgroundColor: "#a0bf3f" }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "#8bad34"}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = "#a0bf3f"}
                 onClick={() => setShowAddOptions(!showAddOptions)}
               >
                 <FaPlus />
@@ -235,7 +243,18 @@ const MarketResearchReport: React.FC = () => {
 												/> */}
                         <button
                           onClick={handleAddMaterial}
-                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700"
+                          className="text-white px-3 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ backgroundColor: "#a0bf3f" }}
+                          onMouseEnter={(e) => {
+                            if (!addMaterialMutation.isPending) {
+                              e.currentTarget.style.backgroundColor = "#8bad34";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!addMaterialMutation.isPending) {
+                              e.currentTarget.style.backgroundColor = "#a0bf3f";
+                            }
+                          }}
                           disabled={addMaterialMutation.isPending}
                         >
                           <FaCubes />
@@ -250,6 +269,7 @@ const MarketResearchReport: React.FC = () => {
                       </h3>
                       <div className="flex flex-col gap-2">
                         <input
+                          ref={fileInputRef}
                           type="file"
                           accept=".pdf"
                           onChange={handleFileChange}
@@ -257,9 +277,20 @@ const MarketResearchReport: React.FC = () => {
                         />
                         <button
                           onClick={handleUploadPDF}
-                          className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 flex items-center justify-center gap-1"
+                          className="text-white px-3 py-1 rounded transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                          style={{ backgroundColor: "#a0bf3f" }}
+                          onMouseEnter={(e) => {
+                            if (!uploadPDFMutation.isPending && selectedFile && newmaterialId) {
+                              e.currentTarget.style.backgroundColor = "#8bad34";
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!uploadPDFMutation.isPending && selectedFile && newmaterialId) {
+                              e.currentTarget.style.backgroundColor = "#a0bf3f";
+                            }
+                          }}
                           disabled={
-                            !selectedFile || uploadPDFMutation.isPending
+                            !selectedFile || !newmaterialId || uploadPDFMutation.isPending
                           }
                         >
                           {uploadPDFMutation.isPending ? (

@@ -52,11 +52,12 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
 
   const { data: keyMetrics } = useQuery<{
     current_price: string;
-    price_change_from_month: string;
+    currency: string;
+    price_change_from_month: string | null;
     ytd_change: string;
     volatility_6m: string;
-    conversion_spread: string;
-    conversion_change_from_month: string;
+    conversion_spread: string | null;
+    conversion_change_from_month: string | null;
   }>({
     queryKey: ["keyMetrics", selectedMaterial, locationId],
     queryFn: () => getKeyMetrics(selectedMaterial?.material_id, locationId?.toString()),
@@ -260,9 +261,14 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
   };
 
   // const latestData = historicalData[historicalData.length - 1] || {};
-  const currentPrice = keyMetrics?.current_price
-    ? `$${keyMetrics?.current_price}`
+  // Get currency from API response or default to USD
+  const currency = keyMetrics?.currency || "USD";
+  const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
+  
+  const currentPriceValue = keyMetrics?.current_price
+    ? `${currencySymbol}${keyMetrics?.current_price}`
     : "--";
+  const currentPriceUnit = keyMetrics?.current_price ? `${currency}/tonne` : "";
 
   const priceChange = keyMetrics?.price_change_from_month
     ? `${keyMetrics?.price_change_from_month}%`
@@ -273,16 +279,15 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
     : "--";
 
   const conversionSpread = keyMetrics?.conversion_spread
-    ? `$${keyMetrics?.conversion_spread}`
+    ? `${currencySymbol}${keyMetrics?.conversion_spread}`
     : "--";
 
   const ytdChange = keyMetrics?.ytd_change
     ? `${keyMetrics?.ytd_change}%`
     : "--";
 
-  const conversionChangeText = `${
-    keyMetrics?.conversion_change_from_month
-  }% from ${getLastMonth()}`;
+  const conversionChangeText = `${keyMetrics?.conversion_change_from_month
+    }% from ${getLastMonth()}`;
 
   // Get model name from API response
   const modelName = materialPriceHistory?.model_name || "Unknown";
@@ -381,8 +386,8 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
         if (historical !== null && historical !== undefined) {
           content += `<div style="margin-bottom: 5px;">
                         <span style="color: #4B9EFF">●</span> <b>Historical Price:</b> ${historical.toFixed(
-                          2
-                        )} USD/tonne
+            2
+          )} USD/tonne
                     </div>`;
 
           content += `
@@ -407,11 +412,9 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
             const value = series[i]?.[dataPointIndex];
             if (value !== null && value !== undefined) {
               content += `<div style="margin-bottom: 5px;">
-                                <span style="color: ${
-                                  forecastColors[i - 1]
-                                }">●</span> <b>${
-                forecastNames[i - 1]
-              }:</b> ${value.toFixed(2)} USD/tonne
+                                <span style="color: ${forecastColors[i - 1]
+                }">●</span> <b>${forecastNames[i - 1]
+                }:</b> ${value.toFixed(2)} USD/tonne
                             </div>`;
             }
           }
@@ -489,6 +492,7 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
         <div
           style={{
             flex: "0 1 30%",
+            minWidth: "300px",
             padding: "20px",
             border: "1px solid #eee",
             borderRadius: "8px",
@@ -501,23 +505,29 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "baseline",
+                alignItems: "flex-start",
+                gap: "20px",
               }}
             >
-              <div>
-                <div style={{ fontSize: "14px", color: "#666" }}>
+              <div style={{ flex: "1", minWidth: "140px" }}>
+                <div style={{ fontSize: "14px", color: "#666", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                   Current Price
                 </div>
-                <div style={{ fontSize: "24px", fontWeight: "bold" }}>
-                  {currentPrice}
+                <div style={{ fontSize: "24px", fontWeight: "bold", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {currentPriceValue}
                 </div>
-                <div style={{ color: "green", fontSize: "14px" }}>
-                  {currentPrice !== "--" &&
+                {currentPriceUnit && (
+                  <div style={{ fontSize: "16px", fontWeight: "bold", whiteSpace: "nowrap" }}>
+                    {currentPriceUnit}
+                  </div>
+                )}
+                <div style={{ color: "green", fontSize: "14px", whiteSpace: "nowrap" }}>
+                  {currentPriceValue !== "--" &&
                     `${priceChange} from ${getLastMonth()}`}
                 </div>
               </div>
-              <div>
-                <div style={{ fontSize: "14px", color: "#666" }}>
+              <div style={{ flex: "1", minWidth: "120px" }}>
+                <div style={{ fontSize: "14px", color: "#666", whiteSpace: "nowrap" }}>
                   YTD Change
                 </div>
                 <div
@@ -541,31 +551,33 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
             style={{
               display: "flex",
               justifyContent: "space-between",
+              alignItems: "flex-start",
+              gap: "20px",
               marginBottom: "20px",
             }}
           >
-            <div>
-              <div style={{ fontSize: "14px", color: "#666" }}>
+            <div style={{ flex: "1", minWidth: "140px" }}>
+              <div style={{ fontSize: "14px", color: "#666", whiteSpace: "nowrap" }}>
                 Volatility (6M)
               </div>
-              <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", whiteSpace: "nowrap" }}>
                 {volatility}
               </div>
               {volatility !== "--" && (
-                <div style={{ color: "orange", fontSize: "14px" }}>
+                <div style={{ color: "orange", fontSize: "14px", whiteSpace: "nowrap" }}>
                   Increased volatility
                 </div>
               )}
             </div>
-            <div>
-              <div style={{ fontSize: "14px", color: "#666" }}>
+            <div style={{ flex: "1", minWidth: "120px" }}>
+              <div style={{ fontSize: "14px", color: "#666", whiteSpace: "nowrap" }}>
                 Conversion Spread
               </div>
-              <div style={{ fontSize: "24px", fontWeight: "bold" }}>
+              <div style={{ fontSize: "24px", fontWeight: "bold", whiteSpace: "nowrap" }}>
                 {conversionSpread}
               </div>
               {conversionSpread !== "--" && (
-                <div style={{ color: "red", fontSize: "14px" }}>
+                <div style={{ color: "red", fontSize: "14px", whiteSpace: "nowrap" }}>
                   {conversionChangeText}
                 </div>
               )}

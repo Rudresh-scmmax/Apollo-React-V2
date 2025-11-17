@@ -6,7 +6,7 @@ aws_region = "us-east-1"
 
 # Application Configuration
 bucket_name = "scm-max-react-app-v2"
-api_url     = "http://apollo-v2-alb-2115905239.us-east-1.elb.amazonaws.com"
+api_url     = "http://apollo-v2-alb-977636636.us-east-1.elb.amazonaws.com"
 
 # Optional Custom Domain
 domain_name = ""  # Leave empty if not using custom domain

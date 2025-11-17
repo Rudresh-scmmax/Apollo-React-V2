@@ -107,6 +107,7 @@ const SeasonalityTrends: React.FC = () => {
         <h1 className="text-2xl font-bold text-gray-800">
           Seasonality Trends for: {selectedMaterial?.material_description || "All Material"}
         </h1>
+        <div style={{ width: "300px" }}>
         <RegionSelector
           regions={regions}
           selectedRegion={regions?.find(r => r.location_id === selectedLocationId)?.location_name || ""}
@@ -117,6 +118,7 @@ const SeasonalityTrends: React.FC = () => {
             }
           }}
         />
+        </div>
       </div>
       <div className="flex items-center mb-4 gap-4">
         <span className="font-medium">Year(s):</span>

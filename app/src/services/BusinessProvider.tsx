@@ -59,11 +59,12 @@ interface BusinessContextType {
     location_id?: string
   ) => Promise<{
     current_price: string;
-    price_change_from_month: string;
+    currency: string;
+    price_change_from_month: string | null;
     ytd_change: string;
     volatility_6m: string;
-    conversion_spread: string;
-    conversion_change_from_month: string;
+    conversion_spread: string | null;
+    conversion_change_from_month: string | null;
   }>;
   toggleTile: (tile: string, active: boolean) => Promise<void>;
   uploadPriceHistory: (file: File) => Promise<any>;
@@ -79,7 +80,7 @@ interface BusinessContextType {
   ) => Promise<any[]>;
   getNewsSupplierTracking: (
     selectedMaterial?: string,
-    region?: string
+    location_id?: number | null
   ) => Promise<any[]>;
   getShutdownTracking: (
     selectedMaterial?: string,
@@ -125,7 +126,7 @@ interface BusinessContextType {
     buyerName?: string;
     year?: string;
   }) => Promise<any[]>;
-  getSupplierRegion: (material_id: string) => Promise<string[]>;
+  getSupplierRegion: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
   getShutdownRegions: (material_id: string) => Promise<{location_id: number, location_name: string}[]>;
   getInventoryLevels: (materalId: string) => Promise<any>;
   getVendorWiseActionPlan: (materalId: string) => Promise<any>;
@@ -319,11 +320,11 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getSupplierRegion = async (
     material_id: string
-  ): Promise<string[]> => {
+  ): Promise<{location_id: number, location_name: string}[]> => {
     const queryParams = new URLSearchParams();
     queryParams.append("material_id", material_id);
     return fetchWrapper(
-      `${businessApiUrl}/supplier_regions?${queryParams.toString()}`,
+      `${businessApiUrl}/supplier-tracking-regions?${queryParams.toString()}`,
       {
         method: "GET",
       }
@@ -528,11 +529,12 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     location_id?: string
   ): Promise<{
     current_price: string;
-    price_change_from_month: string;
+    currency: string;
+    price_change_from_month: string | null;
     ytd_change: string;
     volatility_6m: string;
-    conversion_spread: string;
-    conversion_change_from_month: string;
+    conversion_spread: string | null;
+    conversion_change_from_month: string | null;
   }> => {
     const queryParams = new URLSearchParams();
 
@@ -607,12 +609,14 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getNewsSupplierTracking = async (
     selectedMaterial?: string,
-    region?: string
+    location_id?: number | null
   ): Promise<any[]> => {
     const queryParams = new URLSearchParams();
 
     if (selectedMaterial) queryParams.append("material_id", selectedMaterial);
-    if (region) queryParams.append("region", region);
+    if (location_id !== null && location_id !== undefined) {
+      queryParams.append("location_id", location_id.toString());
+    }
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
