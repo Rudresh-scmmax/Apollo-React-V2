@@ -7,7 +7,7 @@ import MaterialSelect from '../common/MaterialSelect';
 import RegionSelector from '../common/RegionSelector';
 import CurrencySelect from '../common/CurrencySelect';
 import UomSelect from '../common/UomSelect';
-import { setUserPreferences } from '../utils/currencyUtils';
+import { setUserPreferences, getUserPreferences as getStoredUserPreferences } from '../utils/currencyUtils';
 import type { Material } from '../services/BusinessProvider';
 
 interface UserPreferences {
@@ -91,7 +91,20 @@ const UserPreferencesPage: React.FC = () => {
     if (!userPrefs) return;
     
     // Store preferences in localStorage when they're loaded
-    setUserPreferences(userPrefs);
+    // Enrich currency object with currency_code from currencies master if missing
+    const enrichedPrefs: Parameters<typeof setUserPreferences>[0] = { ...userPrefs };
+    if (enrichedPrefs.currency && currencies) {
+      const matchedCurrency = currencies.find(
+        (c) => c.currency_id === enrichedPrefs.currency?.currency_id
+      );
+      if (matchedCurrency && matchedCurrency.currency_code) {
+        enrichedPrefs.currency = {
+          ...enrichedPrefs.currency,
+          currency_code: matchedCurrency.currency_code,
+        };
+      }
+    }
+    setUserPreferences(enrichedPrefs);
 
     // Handle currency preference
     if (userPrefs.currency && currencies && currencies.length > 0) {
@@ -219,7 +232,20 @@ const UserPreferencesPage: React.FC = () => {
       });
       // Store updated preferences in localStorage
       if (updatedPrefs) {
-        setUserPreferences(updatedPrefs);
+        // Enrich currency object with currency_code from currencies master if missing
+        const enrichedPrefs: Parameters<typeof setUserPreferences>[0] = { ...updatedPrefs };
+        if (enrichedPrefs.currency && currencies) {
+          const matchedCurrency = currencies.find(
+            (c) => c.currency_id === enrichedPrefs.currency?.currency_id
+          );
+          if (matchedCurrency && matchedCurrency.currency_code) {
+            enrichedPrefs.currency = {
+              ...enrichedPrefs.currency,
+              currency_code: matchedCurrency.currency_code,
+            };
+          }
+        }
+        setUserPreferences(enrichedPrefs);
       }
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);

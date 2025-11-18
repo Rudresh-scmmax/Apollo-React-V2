@@ -174,7 +174,7 @@ interface BusinessContextType {
   updatePlanAssignments: (planId: number, assignedUsers: string[]) => Promise<any>;
   deleteTakeaway: (id: number) => Promise<any>;
   getUserPreferences: () => Promise<{
-    currency?: {currency_id: number, currency_name: string} | null;
+    currency?: {currency_id: number, currency_code: string, currency_name: string} | null;
     location?: {location_id: number, location_name: string} | null;
     material?: {material_id: string, material_description: string} | null;
     uom?: {uom_id: number, uom_name: string, uom_symbol: string} | null;
@@ -1149,7 +1149,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   };
 
   const getUserPreferences = async (): Promise<{
-    currency?: {currency_id: number, currency_name: string} | null;
+    currency?: {currency_id: number, currency_code: string, currency_name: string} | null;
     location?: {location_id: number, location_name: string} | null;
     material?: {material_id: string, material_description: string} | null;
     uom?: {uom_id: number, uom_name: string, uom_symbol: string} | null;
