@@ -173,9 +173,20 @@ interface BusinessContextType {
   getAllUsers: () => Promise<any>;
   updatePlanAssignments: (planId: number, assignedUsers: string[]) => Promise<any>;
   deleteTakeaway: (id: number) => Promise<any>;
-  getUserPreferences: () => Promise<{user_prefered_currency: string}>;
-  updateUserPreferences: (preferences: {user_prefered_currency: string}) => Promise<any>;
-  getCurrencyMaster: () => Promise<{currency_code: string, currency_name: string}[]>;
+  getUserPreferences: () => Promise<{
+    currency?: {currency_id: number, currency_name: string} | null;
+    location?: {location_id: number, location_name: string} | null;
+    material?: {material_id: string, material_description: string} | null;
+    uom?: {uom_id: number, uom_name: string, uom_symbol: string} | null;
+  }>;
+  updateUserPreferences: (preferences: {
+    currency_id?: number | null;
+    location_id?: number | null;
+    material_id?: string | null;
+    uom_id?: number | null;
+  }) => Promise<any>;
+  getCurrencyMaster: () => Promise<{currency_id?: number, currency_code: string, currency_name: string}[]>;
+  getUomMaster: () => Promise<{uom_id: number, uom_name: string, uom_symbol: string}[]>;
 };
 
 
@@ -1137,13 +1148,23 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const getUserPreferences = async (): Promise<{user_prefered_currency: string}> => {
+  const getUserPreferences = async (): Promise<{
+    currency?: {currency_id: number, currency_name: string} | null;
+    location?: {location_id: number, location_name: string} | null;
+    material?: {material_id: string, material_description: string} | null;
+    uom?: {uom_id: number, uom_name: string, uom_symbol: string} | null;
+  }> => {
     return fetchWrapper(`${businessApiUrl}/user-preferences`, {
       method: "GET",
     });
   };
 
-  const updateUserPreferences = async (preferences: {user_prefered_currency: string}): Promise<any> => {
+  const updateUserPreferences = async (preferences: {
+    currency_id?: number | null;
+    location_id?: number | null;
+    material_id?: string | null;
+    uom_id?: number | null;
+  }): Promise<any> => {
     return fetchWrapper(`${businessApiUrl}/user-preferences`, {
       method: "POST",
       headers: {
@@ -1153,8 +1174,14 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const getCurrencyMaster = async (): Promise<{currency_code: string, currency_name: string}[]> => {
+  const getCurrencyMaster = async (): Promise<{currency_id?: number, currency_code: string, currency_name: string}[]> => {
     return fetchWrapper(`${businessApiUrl}/currency-master`, {
+      method: "GET",
+    });
+  };
+
+  const getUomMaster = async (): Promise<{uom_id: number, uom_name: string, uom_symbol: string}[]> => {
+    return fetchWrapper(`${businessApiUrl}/uom-master`, {
       method: "GET",
     });
   };
@@ -1468,6 +1495,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     getUserPreferences,
     updateUserPreferences,
     getCurrencyMaster,
+    getUomMaster,
   };
 
   return (

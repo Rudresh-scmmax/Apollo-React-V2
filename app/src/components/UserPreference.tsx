@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { FaSave, FaCheck } from 'react-icons/fa';
 import { useBusinessAPI } from '../services/BusinessProvider';
@@ -6,35 +6,48 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import MaterialSelect from '../common/MaterialSelect';
 import RegionSelector from '../common/RegionSelector';
 import CurrencySelect from '../common/CurrencySelect';
+import UomSelect from '../common/UomSelect';
 import type { Material } from '../services/BusinessProvider';
 
 interface UserPreferences {
   material: string;
   region: string;
   currency: string;
+  uom: number | null;
   negotiationStyle: string;
 }
+
+// Default values
+const DEFAULT_CURRENCY = 'USD';
+const DEFAULT_CURRENCY_ID = 3;
+const DEFAULT_REGION = 'Asia-Pacific';
+const DEFAULT_MATERIAL_ID = '100724-000000';
+const DEFAULT_UOM_ID = 4; // tonne
 
 const UserPreferencesPage: React.FC = () => {
   const {
     getUserPreferences,
     updateUserPreferences,
     getCurrencyMaster,
+    getUomMaster,
     getMaterials,
     getAllRegions,
   } = useBusinessAPI();
   const queryClient = useQueryClient();
   
   const [preferences, setPreferences] = useState<UserPreferences>({
-    material: 'glycerine',
-    region: 'north-america',
-    currency: 'USD',
+    material: DEFAULT_MATERIAL_ID,
+    region: DEFAULT_REGION,
+    currency: DEFAULT_CURRENCY,
+    uom: DEFAULT_UOM_ID,
     negotiationStyle: 'balanced',
   });
 
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(null);
   const [selectedRegion, setSelectedRegion] = useState<string>('');
   const [isSaved, setIsSaved] = useState(false);
+  const [locationId, setLocationId] = useState<number | null>(null);
+  const [materialId, setMaterialId] = useState<string | null>(null);
 
   // Fetch user preferences
   const { data: userPrefs, isLoading } = useQuery({
@@ -58,45 +71,137 @@ const UserPreferencesPage: React.FC = () => {
 
   // Fetch currencies from API
   const { data: currencies, isLoading: currenciesLoading } = useQuery<
-    { currency_code: string; currency_name: string }[]
+    { currency_id?: number; currency_code: string; currency_name: string }[]
   >({
     queryKey: ['currencyMaster'],
     queryFn: getCurrencyMaster,
   });
 
+  // Fetch UOMs from API
+  const { data: uoms, isLoading: uomsLoading } = useQuery<
+    { uom_id: number; uom_name: string; uom_symbol: string }[]
+  >({
+    queryKey: ['uomMaster'],
+    queryFn: getUomMaster,
+  });
+
   // Update preferences when API data loads
   useEffect(() => {
-    if (userPrefs?.user_prefered_currency) {
-      setPreferences(prev => ({
-        ...prev,
-        currency: userPrefs.user_prefered_currency
-      }));
-    }
-  }, [userPrefs]);
+    if (!userPrefs) return;
 
-  // Initialize selected material once materials load
-  useEffect(() => {
-    if (materials && materials.length > 0 && !selectedMaterial) {
-      const defaultMaterial = materials[0];
-      setSelectedMaterial(defaultMaterial);
+    // Handle currency preference
+    if (userPrefs.currency && currencies && currencies.length > 0) {
+      const apiCurrency = userPrefs.currency;
+      // Try multiple matching strategies
+      let matchedCurrency = currencies.find(
+        (c) => c.currency_code.toUpperCase().trim() === apiCurrency.currency_name.toUpperCase().trim()
+      );
+      
+      if (!matchedCurrency) {
+        matchedCurrency = currencies.find(
+          (c) => c.currency_name.toLowerCase().trim() === apiCurrency.currency_name.toLowerCase().trim()
+        );
+      }
+      
+      if (!matchedCurrency) {
+        matchedCurrency = currencies.find(
+          (c) => c.currency_name.toLowerCase().includes(apiCurrency.currency_name.toLowerCase()) ||
+                 c.currency_code.toUpperCase() === apiCurrency.currency_name.toUpperCase()
+        );
+      }
+      
+      if (matchedCurrency) {
+        setPreferences(prev => ({
+          ...prev,
+          currency: matchedCurrency.currency_code
+        }));
+      } else {
+        // Use default if no match found
+        setPreferences(prev => ({
+          ...prev,
+          currency: DEFAULT_CURRENCY
+        }));
+      }
+    } else if (currencies && currencies.length > 0 && !userPrefs.currency) {
+      // No API preference, use default
       setPreferences(prev => ({
         ...prev,
-        material: defaultMaterial.material_id,
+        currency: DEFAULT_CURRENCY
       }));
     }
-  }, [materials, selectedMaterial]);
 
-  // Initialize selected region when regions load
-  useEffect(() => {
-    if (regions && regions.length > 0 && !selectedRegion) {
-      const defaultRegion = regions[0].location_name;
-      setSelectedRegion(defaultRegion);
-      setPreferences(prev => ({
-        ...prev,
-        region: defaultRegion,
-      }));
+    // Handle location preference
+    if (userPrefs.location && regions && regions.length > 0) {
+      const apiLocation = userPrefs.location;
+      const matchedRegion = regions.find(r => r.location_id === apiLocation.location_id);
+      if (matchedRegion) {
+        setSelectedRegion(matchedRegion.location_name);
+        setLocationId(apiLocation.location_id);
+        setPreferences(prev => ({
+          ...prev,
+          region: matchedRegion.location_name
+        }));
+      }
+    } else if (regions && regions.length > 0 && !userPrefs.location) {
+      // No API preference, use default
+      const defaultRegion = regions.find(r => r.location_name === DEFAULT_REGION) || regions[0];
+      if (defaultRegion) {
+        setSelectedRegion(defaultRegion.location_name);
+        setPreferences(prev => ({
+          ...prev,
+          region: defaultRegion.location_name
+        }));
+      }
     }
-  }, [regions, selectedRegion]);
+
+    // Handle material preference
+    if (userPrefs.material && materials && materials.length > 0) {
+      const apiMaterial = userPrefs.material;
+      const matchedMaterial = materials.find(m => m.material_id === apiMaterial.material_id);
+      if (matchedMaterial) {
+        setSelectedMaterial(matchedMaterial);
+        setMaterialId(apiMaterial.material_id);
+        setPreferences(prev => ({
+          ...prev,
+          material: apiMaterial.material_id
+        }));
+      }
+    } else if (materials && materials.length > 0 && !userPrefs.material) {
+      // No API preference, use default
+      const defaultMaterial = materials.find(m => m.material_id === DEFAULT_MATERIAL_ID) || materials[0];
+      if (defaultMaterial) {
+        setSelectedMaterial(defaultMaterial);
+        setMaterialId(defaultMaterial.material_id);
+        setPreferences(prev => ({
+          ...prev,
+          material: defaultMaterial.material_id,
+          uom: defaultMaterial.base_uom_id || prev.uom
+        }));
+      }
+    }
+
+    // Handle UOM preference
+    if (userPrefs.uom && uoms && uoms.length > 0) {
+      const apiUom = userPrefs.uom;
+      const matchedUom = uoms.find(u => u.uom_id === apiUom.uom_id);
+      if (matchedUom) {
+        setPreferences(prev => ({
+          ...prev,
+          uom: apiUom.uom_id
+        }));
+      }
+    } else if (uoms && uoms.length > 0 && !userPrefs.uom) {
+      // No API preference, use default
+      const defaultUom = uoms.find(u => u.uom_id === DEFAULT_UOM_ID) || uoms[0];
+      if (defaultUom) {
+        setPreferences(prev => ({
+          ...prev,
+          uom: defaultUom.uom_id
+        }));
+      }
+    }
+  }, [userPrefs, currencies, regions, materials, uoms]);
+
 
   // Update preferences mutation
   const updatePreferencesMutation = useMutation({
@@ -129,15 +234,69 @@ const UserPreferencesPage: React.FC = () => {
     },
   ];
 
-  const handleChange = (field: keyof UserPreferences, value: string) => {
+  const handleChange = (field: keyof UserPreferences, value: string | number | null) => {
     setPreferences((prev) => ({ ...prev, [field]: value }));
     setIsSaved(false);
   };
 
   const handleSave = () => {
-    updatePreferencesMutation.mutate({
-      user_prefered_currency: preferences.currency
-    });
+    // Get currency_id from selected currency
+    let targetCurrencyId: number | null = null;
+    if (currencies && preferences.currency) {
+      const selectedCurrency = currencies.find((c) => c.currency_code === preferences.currency);
+      if (selectedCurrency?.currency_id) {
+        targetCurrencyId = selectedCurrency.currency_id;
+      } else if (userPrefs?.currency?.currency_id) {
+        // Use currency_id from API if currency master doesn't have it
+        targetCurrencyId = userPrefs.currency.currency_id;
+      } else {
+        // Fallback to default
+        targetCurrencyId = DEFAULT_CURRENCY_ID;
+      }
+    } else if (userPrefs?.currency?.currency_id) {
+      // If no currency selected but API has one, use it
+      targetCurrencyId = userPrefs.currency.currency_id;
+    }
+
+    // Get location_id from selected region
+    let targetLocationId: number | null = null;
+    if (regions && preferences.region) {
+      const selectedRegion = regions.find((r) => r.location_name === preferences.region);
+      if (selectedRegion) {
+        targetLocationId = selectedRegion.location_id;
+      } else if (locationId) {
+        targetLocationId = locationId;
+      }
+    }
+
+    // Get material_id
+    const targetMaterialId = preferences.material || materialId || null;
+
+    // Get uom_id
+    const targetUomId = preferences.uom || null;
+
+    // Build update payload
+    const updatePayload: {
+      currency_id?: number | null;
+      location_id?: number | null;
+      material_id?: string | null;
+      uom_id?: number | null;
+    } = {};
+
+    if (targetCurrencyId) {
+      updatePayload.currency_id = targetCurrencyId;
+    }
+    if (targetLocationId) {
+      updatePayload.location_id = targetLocationId;
+    }
+    if (targetMaterialId) {
+      updatePayload.material_id = targetMaterialId;
+    }
+    if (targetUomId) {
+      updatePayload.uom_id = targetUomId;
+    }
+
+    updatePreferencesMutation.mutate(updatePayload);
   };
 
   return (
@@ -147,7 +306,7 @@ const UserPreferencesPage: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">User Preferences</h1>
           <p className="text-gray-600">Customize your trading and negotiation settings</p>
-          {(isLoading || currenciesLoading) && (
+          {(isLoading || currenciesLoading || uomsLoading) && (
             <div className="text-sm text-blue-600 mt-2">Loading preferences...</div>
           )}
         </div>
@@ -167,6 +326,7 @@ const UserPreferencesPage: React.FC = () => {
                     selectedMaterial={selectedMaterial}
                     onSelect={(material) => {
                       setSelectedMaterial(material);
+                      setMaterialId(material?.material_id || null);
                       handleChange('material', material?.material_id || '');
                     }}
                     placeholder="Select Material"
@@ -186,6 +346,10 @@ const UserPreferencesPage: React.FC = () => {
                   selectedRegion={selectedRegion}
                   setSelectedRegion={(regionName) => {
                     setSelectedRegion(regionName);
+                    const region = regions?.find(r => r.location_name === regionName);
+                    if (region) {
+                      setLocationId(region.location_id);
+                    }
                     handleChange('region', regionName);
                   }}
                 />
@@ -195,12 +359,31 @@ const UserPreferencesPage: React.FC = () => {
             {/* Currency Selection */}
             <div className="space-y-3">
               <label className="block text-sm font-semibold text-gray-700">Currency</label>
-              <CurrencySelect
-                currencies={currencies || []}
-                selectedCurrency={preferences.currency}
-                onChange={(value) => handleChange('currency', value)}
-                loading={currenciesLoading}
-              />
+              {currenciesLoading || isLoading ? (
+                <div className="text-sm text-gray-500">Loading currencies...</div>
+              ) : (
+                <CurrencySelect
+                  currencies={currencies || []}
+                  selectedCurrency={preferences.currency}
+                  onChange={(value) => handleChange('currency', value)}
+                  loading={currenciesLoading}
+                />
+              )}
+            </div>
+
+            {/* UOM Selection */}
+            <div className="space-y-3">
+              <label className="block text-sm font-semibold text-gray-700">Unit of Measurement (UOM)</label>
+              {uomsLoading ? (
+                <div className="text-sm text-gray-500">Loading UOMs...</div>
+              ) : (
+                <UomSelect
+                  uoms={uoms || []}
+                  selectedUom={preferences.uom}
+                  onChange={(uomId) => handleChange('uom', uomId)}
+                  loading={uomsLoading}
+                />
+              )}
             </div>
 
             {/* Negotiation Style */}
