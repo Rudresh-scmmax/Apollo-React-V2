@@ -7,6 +7,7 @@ import type { Key } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useBusinessAPI } from "../../services/BusinessProvider";
 import { Option } from "antd/es/mentions";
+import { getCurrencySymbol, getUserUom } from "../../utils/currencyUtils";
 
 const months = [
   "jan", "feb", "mar", "apr", "may", "jun",
@@ -16,7 +17,7 @@ const months = [
 interface TradeDataRow {
   source: string;
   region: string;
-  type: "Qty in MT" | "Price in $/MT";
+  type: string; // Will be dynamically set
   grand_total: string;
   [key: string]: any;
 }
@@ -38,48 +39,51 @@ interface ApiTradeData {
   region: string;
 }
 
-// Function to generate a simple best price insight
-function getBestPriceInsight(tradeData: { data?: ApiTradeData[]; rows?: ApiTradeData[] }): string {
-  const dataArray = tradeData?.rows || tradeData?.data;
-  if (!dataArray?.length) return "No data available for insights.";
-
-  const avgPrices: { [key: string]: { total: number; count: number } } = {};
-  
-  dataArray.forEach((record: ApiTradeData) => {
-    const price = Number(record.price_per_quantity);
-    if (!isNaN(price) && price > 0) {
-      if (!avgPrices[record.source]) {
-        avgPrices[record.source] = { total: 0, count: 0 };
-      }
-      avgPrices[record.source].total += price;
-      avgPrices[record.source].count += 1;
-    }
-  });
-
-  let minAvgPrice = Infinity;
-  let bestSource = "";
-  
-  Object.entries(avgPrices).forEach(([source, data]) => {
-    const avgPrice = data.total / data.count;
-    if (avgPrice < minAvgPrice) {
-      minAvgPrice = avgPrice;
-      bestSource = source;
-    }
-  });
-
-  if (bestSource) {
-    return `Best average price offered by ${bestSource} at $${minAvgPrice.toFixed(2)}/MT.`;
-  } else {
-    return "No valid price data to generate insights.";
-  }
-}
-
 const TradeDataAnalysis: React.FC = () => {
   const { getTradeData } = useBusinessAPI();
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
+  const currencySymbol = getCurrencySymbol();
+  const uom = getUserUom();
+  const priceTypeLabel = `Price in ${currencySymbol}/${uom}`;
 
   const [selectedYear, setSelectedYear] = useState(currentYear);
+
+  // Function to generate a simple best price insight
+  const getBestPriceInsight = (tradeData: { data?: ApiTradeData[]; rows?: ApiTradeData[] }): string => {
+    const dataArray = tradeData?.rows || tradeData?.data;
+    if (!dataArray?.length) return "No data available for insights.";
+
+    const avgPrices: { [key: string]: { total: number; count: number } } = {};
+    
+    dataArray.forEach((record: ApiTradeData) => {
+      const price = Number(record.price_per_quantity);
+      if (!isNaN(price) && price > 0) {
+        if (!avgPrices[record.source]) {
+          avgPrices[record.source] = { total: 0, count: 0 };
+        }
+        avgPrices[record.source].total += price;
+        avgPrices[record.source].count += 1;
+      }
+    });
+
+    let minAvgPrice = Infinity;
+    let bestSource = "";
+    
+    Object.entries(avgPrices).forEach(([source, data]) => {
+      const avgPrice = data.total / data.count;
+      if (avgPrice < minAvgPrice) {
+        minAvgPrice = avgPrice;
+        bestSource = source;
+      }
+    });
+
+    if (bestSource) {
+      return `Best average price offered by ${bestSource} at ${currencySymbol}${minAvgPrice.toFixed(2)}/${uom}.`;
+    } else {
+      return "No valid price data to generate insights.";
+    }
+  };
 
   const selectedMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial
@@ -154,7 +158,7 @@ const TradeDataAnalysis: React.FC = () => {
       tableData.push({
         source: source,
         region: sourceInfo.region,
-        type: "Price in $/MT",
+        type: priceTypeLabel,
         ...months.reduce((acc, m) => ({ ...acc, [m]: sourceInfo.months[m]?.price || 0 }), {}),
         grand_total: (totalPrice[source] / dataArray.filter((r: ApiTradeData) => r.source === source).length).toFixed(2),
         _rowSpan: 0,

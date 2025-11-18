@@ -1,5 +1,6 @@
 import React from "react";
 import Chart from "react-apexcharts";
+import { getUserCurrency, getCurrencySymbol, getUserUom } from "../../utils/currencyUtils";
 
 type PriceSeries = {
   name: string;
@@ -12,6 +13,9 @@ type PriceTrendChartProps = {
 };
 
 const PriceTrendChart: React.FC<PriceTrendChartProps> = ({ supplierData, marketData }) => {
+  const currency = getUserCurrency();
+  const currencySymbol = getCurrencySymbol();
+  const uom = getUserUom();
   const allMonthsSet = new Set<string>();
   [...supplierData, ...marketData].forEach(series => {
     Object.keys(series.prices).forEach(month => allMonthsSet.add(month));
@@ -77,7 +81,7 @@ const PriceTrendChart: React.FC<PriceTrendChartProps> = ({ supplierData, marketD
     },
     yaxis: {
       title: {
-        text: "Price (USD/MT)",
+        text: `Price (${currency}/${uom})`,
         style: { fontWeight: 600 },
         rotate: -90,
         offsetX: 0,

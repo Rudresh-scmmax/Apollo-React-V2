@@ -58,6 +58,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 			if (data.role) localStorage.setItem('role', data.role);
 			if (data.userId) localStorage.setItem('userId', data.userId);
 			if (data.email) localStorage.setItem('email', data.email);
+			
+			// Fetch and store user preferences after login
+			try {
+				const businessApiUrl = (import.meta as any).env.VITE_BUSINESS_API_URL;
+				const prefsResponse = await fetch(`${businessApiUrl}/user-preferences`, {
+					method: 'GET',
+					headers: {
+						'Authorization': `Bearer ${data.access_token}`,
+						'Content-Type': 'application/json',
+					},
+				});
+				if (prefsResponse.ok) {
+					const prefs = await prefsResponse.json();
+					localStorage.setItem('user_preferences', JSON.stringify(prefs));
+				}
+			} catch (error) {
+				console.error('Failed to fetch user preferences:', error);
+				// Don't fail login if preferences fetch fails
+			}
 		} else if (data.error) {
 			throw new Error(data.error);
 		} else {

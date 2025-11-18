@@ -3,6 +3,7 @@ import { Table, Tooltip } from "antd";
 import { QuestionCircleOutlined } from "@ant-design/icons";
 import EditableCell from "./EditableCell"; // Use your EditableCell here
 import { getDynamicWidth } from "./Utils";
+import { getCurrencySymbol, getUserUom } from "../../utils/currencyUtils";
 
 interface Props {
   targetValues: {
@@ -32,7 +33,7 @@ const TargetNegotiationTable: React.FC<Props> = ({ targetValues, onChange }) => 
           style={{ width: getDynamicWidth(stringValue, placeholder) }}
         />
         <span style={{ marginLeft: 4 }}>
-          $/MT {source ? `(${source})` : ""}
+          {`${getCurrencySymbol()}/${getUserUom()}`} {source ? `(${source})` : ""}
         </span>
       </div>
     );
@@ -42,7 +43,7 @@ const TargetNegotiationTable: React.FC<Props> = ({ targetValues, onChange }) => 
     {
       title: (
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          Min (in $/MT)
+          Min (in {`${getCurrencySymbol()}/${getUserUom()}`})
           <Tooltip
             title={
               <>
@@ -71,7 +72,7 @@ const TargetNegotiationTable: React.FC<Props> = ({ targetValues, onChange }) => 
     {
       title: (
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          Max (in $/MT)
+          Max (in {`${getCurrencySymbol()}/${getUserUom()}`})
           <Tooltip
             title={
               <>

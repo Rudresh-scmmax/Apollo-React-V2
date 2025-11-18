@@ -3,6 +3,7 @@ import Chart from "react-apexcharts";
 import { ApexOptions } from "apexcharts";
 import { useQuery } from "@tanstack/react-query";
 import { useBusinessAPI } from "../../services/BusinessProvider";
+import { getUserCurrency, getCurrencySymbol, getUserUom } from "../../utils/currencyUtils";
 
 interface PriceData {
   month: string;
@@ -25,6 +26,9 @@ const HistoricalPriceChart: React.FC<HistoricalPriceChartProps> = ({
   isLoading,
 }) => {
   const { getHistoricalPrices } = useBusinessAPI();
+  const currency = getUserCurrency();
+  const currencySymbol = getCurrencySymbol();
+  const uom = getUserUom();
 
   if (isLoading) {
     return <div>Loading chart...</div>;
@@ -154,7 +158,7 @@ const HistoricalPriceChart: React.FC<HistoricalPriceChartProps> = ({
     },
     yaxis: {
       title: {
-        text: "USD/tonne",
+        text: `${currency}/${uom}`,
         style: { color: "#666", fontSize: "12px" },
       },
       min: dynamicMin,
@@ -173,7 +177,7 @@ const HistoricalPriceChart: React.FC<HistoricalPriceChartProps> = ({
             </div>
             <div style="margin-bottom: 5px;">
               <span style="color: #4B9EFF">●</span> 
-              <b>Price:</b> ${price?.toFixed(2)} USD/tonne
+              <b>Price:</b> ${price?.toFixed(2)} ${currency}/${uom}
             </div>
           </div>
         `;

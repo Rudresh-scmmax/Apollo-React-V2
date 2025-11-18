@@ -7,6 +7,7 @@ import MaterialSelect from '../common/MaterialSelect';
 import RegionSelector from '../common/RegionSelector';
 import CurrencySelect from '../common/CurrencySelect';
 import UomSelect from '../common/UomSelect';
+import { setUserPreferences } from '../utils/currencyUtils';
 import type { Material } from '../services/BusinessProvider';
 
 interface UserPreferences {
@@ -88,6 +89,9 @@ const UserPreferencesPage: React.FC = () => {
   // Update preferences when API data loads
   useEffect(() => {
     if (!userPrefs) return;
+    
+    // Store preferences in localStorage when they're loaded
+    setUserPreferences(userPrefs);
 
     // Handle currency preference
     if (userPrefs.currency && currencies && currencies.length > 0) {
@@ -206,8 +210,17 @@ const UserPreferencesPage: React.FC = () => {
   // Update preferences mutation
   const updatePreferencesMutation = useMutation({
     mutationFn: updateUserPreferences,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
+    onSuccess: async () => {
+      // Invalidate and refetch preferences
+      await queryClient.invalidateQueries({ queryKey: ['userPreferences'] });
+      const updatedPrefs = await queryClient.fetchQuery({
+        queryKey: ['userPreferences'],
+        queryFn: getUserPreferences,
+      });
+      // Store updated preferences in localStorage
+      if (updatedPrefs) {
+        setUserPreferences(updatedPrefs);
+      }
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 3000);
     },

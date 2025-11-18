@@ -2,6 +2,7 @@ import React from "react";
 import { Table } from "antd";
 import EditableCell from "./EditableCell";
 import { getDynamicWidth } from "./Utils";
+import { getCurrencySymbol, getUserUom } from "../../utils/currencyUtils";
 
 
 interface TcoItem {
@@ -30,7 +31,7 @@ const TcoTable: React.FC<Props> = ({ data, onChange }) => {
         placeholder={placeholder}
         style={{ width: getDynamicWidth(value, placeholder) }}
       />
-      <span style={{ marginLeft: 4 }}>&nbsp;$/MT</span>
+      <span style={{ marginLeft: 4 }}>&nbsp;{`${getCurrencySymbol()}/${getUserUom()}`}</span>
     </div>
   );
 

@@ -4,6 +4,7 @@ import { ApexOptions } from "apexcharts";
 import { useQuery } from "@tanstack/react-query";
 import { useBusinessAPI } from "../../services/BusinessProvider";
 import { Card, Typography, Spin } from "antd";
+import { getUserCurrency, getCurrencySymbol, getUserUom } from "../../utils/currencyUtils";
 
 const { Title, Text } = Typography;
 
@@ -20,6 +21,9 @@ interface PriceChartWithNewsProps {
 
 const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, locationId }) => {
   const { getMaterialPrices } = useBusinessAPI();
+  const currency = getUserCurrency();
+  const currencySymbol = getCurrencySymbol();
+  const uom = getUserUom();
 
   const { data: materialPriceHistory, isLoading } = useQuery({
     queryKey: ["materialPrices", materialId, locationId],
@@ -186,7 +190,7 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
     },
     yaxis: {
       title: {
-        text: "USD/tonne",
+        text: `${currency}/${uom}`,
         style: {
           color: "#666",
           fontSize: "12px",
@@ -211,7 +215,7 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
           content += `<div style="margin-bottom: 5px;">
                         <span style="color: #a0bf3f">●</span> <b>Historical Price:</b> ${historical.toFixed(
                           2
-                        )} USD/tonne
+                        )} ${currency}/${uom}
                     </div>`;
 
           content += `
@@ -224,7 +228,7 @@ const PriceChartWithNews: React.FC<PriceChartWithNewsProps> = ({ materialId, loc
           const forecast = series[1]?.[dataPointIndex];
           if (forecast !== null && forecast !== undefined) {
             content += `<div style="margin-bottom: 5px;">
-                                <span style="color: #808080">●</span> <b>Forecast:</b> ${forecast.toFixed(2)} USD/tonne
+                                <span style="color: #808080">●</span> <b>Forecast:</b> ${forecast.toFixed(2)} ${currency}/${uom}
                             </div>`;
           }
         }

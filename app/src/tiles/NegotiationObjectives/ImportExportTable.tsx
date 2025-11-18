@@ -2,6 +2,7 @@ import React from "react";
 import { Table, Input } from "antd";
 import EditableCell from "./EditableCell"; // Should render input, not formatted value
 import { getDynamicWidth } from "./Utils";
+import { getCurrencySymbol, getUserUom } from "../../utils/currencyUtils";
 
 interface TradeData {
   pastPeriod: string;
@@ -40,7 +41,7 @@ const ImportExportTable: React.FC<Props> = ({
         placeholder={placeholder}
         style={{ width: getDynamicWidth(value, placeholder) }}
       />
-      <span style={{ marginLeft: 4 }}>&nbsp;$/MT</span>
+      <span style={{ marginLeft: 4 }}>&nbsp;{`${getCurrencySymbol()}/${getUserUom()}`}</span>
     </div>
   );
 

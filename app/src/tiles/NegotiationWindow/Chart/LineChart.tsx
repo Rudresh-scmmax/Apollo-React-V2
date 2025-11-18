@@ -10,6 +10,7 @@ import {
 } from "../../../services/BusinessProvider";
 import CostumTextField from "../../../common/CostumTextField";
 import { message } from "antd";
+import { getUserCurrency, getCurrencySymbol, getUserUom } from "../../../utils/currencyUtils";
 
 interface DataPoint {
   x: string;
@@ -261,14 +262,16 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
   };
 
   // const latestData = historicalData[historicalData.length - 1] || {};
-  // Get currency from API response or default to USD
-  const currency = keyMetrics?.currency || "USD";
-  const currencySymbol = currency === "INR" ? "₹" : currency === "USD" ? "$" : currency;
+  // Get currency from user preferences or API response
+  const userCurrency = getUserCurrency();
+  const currency = keyMetrics?.currency || userCurrency;
+  const currencySymbol = getCurrencySymbol(currency);
+  const uom = getUserUom();
   
   const currentPriceValue = keyMetrics?.current_price
     ? `${currencySymbol}${keyMetrics?.current_price}`
     : "--";
-  const currentPriceUnit = keyMetrics?.current_price ? `${currency}/tonne` : "";
+  const currentPriceUnit = keyMetrics?.current_price ? `${currency}/${uom}` : "";
 
   const priceChange = keyMetrics?.price_change_from_month
     ? `${keyMetrics?.price_change_from_month}%`
@@ -362,7 +365,7 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
     },
     yaxis: {
       title: {
-        text: "USD/tonne",
+        text: `${currency}/${uom}`,
         style: {
           color: "#666",
           fontSize: "12px",
@@ -387,7 +390,7 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
           content += `<div style="margin-bottom: 5px;">
                         <span style="color: #4B9EFF">●</span> <b>Historical Price:</b> ${historical.toFixed(
             2
-          )} USD/tonne
+          )} ${currency}/${uom}
                     </div>`;
 
           content += `
@@ -414,7 +417,7 @@ const GlycerinePriceChart: React.FC<GlycerinePriceChartProps> = ({
               content += `<div style="margin-bottom: 5px;">
                                 <span style="color: ${forecastColors[i - 1]
                 }">●</span> <b>${forecastNames[i - 1]
-                }:</b> ${value.toFixed(2)} USD/tonne
+                }:</b> ${value.toFixed(2)} ${currency}/${uom}
                             </div>`;
             }
           }
