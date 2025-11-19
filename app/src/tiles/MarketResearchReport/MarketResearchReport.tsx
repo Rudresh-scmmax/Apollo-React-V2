@@ -1,13 +1,10 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   FaCheckCircle,
-  FaCubes,
-  FaExternalLinkAlt,
   FaFileUpload,
   FaPlus,
   FaSpinner,
 } from "react-icons/fa";
-import { BsFileEarmarkText } from "react-icons/bs";
 import { Material, useBusinessAPI } from "../../services/BusinessProvider";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalStorage } from "../../services/StorageProvider";
@@ -31,7 +28,7 @@ const MarketResearchReport: React.FC = () => {
     (state: RootState) => state.material.globalSelectedMaterial
   );
 
-  const { getTakeaways, addMaterial, uploadPDF, checkPDFStatus, getMaterials, deleteTakeaway } =
+  const { getTakeaways,  uploadPDF, checkPDFStatus, getMaterials, deleteTakeaway } =
     useBusinessAPI();
   const [showAddOptions, setShowAddOptions] = useState(false);
   const [newmaterialId, setNewmaterialId] = useState<string>("");
@@ -44,11 +41,7 @@ const MarketResearchReport: React.FC = () => {
     "processingPDFs",
     []
   );
-  // const [uploadStatus, setUploadStatus] = useState<{
-  //   visible: boolean;
-  //   success: boolean;
-  //   message: string;
-  // }>({ visible: false, success: false, message: "" });
+
 
   const { data: materials, isLoading: isLoadingMaterials } = useQuery<
     Material[]
@@ -93,14 +86,7 @@ const MarketResearchReport: React.FC = () => {
     queryFn: () => getTakeaways(selectedMaterial?.material_id),
   });
 
-  const addMaterialMutation = useMutation({
-    mutationFn: addMaterial,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["materials"] });
-      setNewmaterialId("");
-      setShowAddOptions(false);
-    },
-  });
+
 
   const deleteTakeawayMutation = useMutation({
     mutationFn: (id: number) => deleteTakeaway(id),
@@ -118,11 +104,7 @@ const MarketResearchReport: React.FC = () => {
   };
 
 
-  const handleAddMaterial = () => {
-    if (newmaterialId?.trim()) {
-      addMaterialMutation.mutate(newmaterialId);
-    }
-  };
+
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files && event.target.files[0]) {
@@ -176,13 +158,6 @@ const MarketResearchReport: React.FC = () => {
     };
   }, []);
 
-  /*if (isPending) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600 text-lg font-semibold">Loading...</div>
-      </div>
-    );
-  }*/
 
   console.log(marketData);
 
@@ -234,31 +209,6 @@ const MarketResearchReport: React.FC = () => {
                             }
                           }}
                         />
-                        {/* <input
-													type="text"
-													className="border border-gray-300 rounded px-3 py-1 flex-grow"
-													placeholder="Material name"
-													value={newmaterialId}
-													onChange={(e) => setNewmaterialId(e.target.value)}
-												/> */}
-                        <button
-                          onClick={handleAddMaterial}
-                          className="text-white px-3 py-1 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          style={{ backgroundColor: "#a0bf3f" }}
-                          onMouseEnter={(e) => {
-                            if (!addMaterialMutation.isPending) {
-                              e.currentTarget.style.backgroundColor = "#8bad34";
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!addMaterialMutation.isPending) {
-                              e.currentTarget.style.backgroundColor = "#a0bf3f";
-                            }
-                          }}
-                          disabled={addMaterialMutation.isPending}
-                        >
-                          <FaCubes />
-                        </button>
                       </div>
                     </div>
 

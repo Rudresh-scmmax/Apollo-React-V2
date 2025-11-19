@@ -26,7 +26,6 @@ interface BusinessContextType {
   checkPDFStatus: (id: string) => Promise<any>;
   getTakeaways: (selectedMaterial?: string) => Promise<any[]>;
   getMaterials: () => Promise<Material[]>;
-  addMaterial: (material: string) => Promise<void>;
   getDailyUpdate: (material_id: string, region:string) => Promise<any>;
   checkTiles: () => Promise<Tile[]>;
   getMaterialPriceHistory: (
@@ -236,11 +235,7 @@ export type StrategyRecommendation = {
 export const BusinessProvider: React.FC<BusinessProviderProps> = ({
   children,
 }) => {
-  const [materials, setMaterials] = useState<string[]>([
-    "Acetic Acid",
-    "Carbon",
-    "Glycerin",
-  ]);
+
 
   const { getToken } = useAuth();
 
@@ -362,9 +357,6 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const addMaterial = async (material: string): Promise<void> => {
-    setMaterials((prev) => [...prev, material]);
-  };
 
   const getDailyUpdate = async (material_id: string, region: string): Promise<any> => {
   const queryParams = new URLSearchParams();
@@ -1479,7 +1471,6 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     checkPDFStatus,
     getTakeaways,
     getMaterials,
-    addMaterial,
     getDailyUpdate,
     checkTiles,
     toggleTile,

@@ -15,6 +15,14 @@ interface UserPreferences {
   material?: {
     material_id: string;
     material_description: string;
+    material_type_id?: number;
+    material_status?: string;
+    base_uom_id?: number;
+    user_defined_material_desc?: string | null;
+    material_category?: string;
+    cas_no?: string | null;
+    unspsc_code?: string | null;
+    hsn_code?: string | null;
   } | null;
   uom?: {
     uom_id: number;
@@ -120,36 +128,48 @@ export const getUserRegion = (): string => {
 
 /**
  * Get user's preferred material from localStorage
- * @returns Material ID or empty string if not set
+ * Uses material from API response, defaults to Glycerine (100724-000000) if not set
+ * @returns Material ID (e.g., "100724-000000") or "100724-000000" as default
  */
 export const getUserMaterial = (): string => {
   try {
     const stored = localStorage.getItem('user_preferences');
     if (stored) {
       const prefs: UserPreferences = JSON.parse(stored);
-      return prefs.material?.material_id || '';
+      // Return material_id from API response, or default to Glycerine
+      return prefs.material?.material_id || '100724-000000';
     }
   } catch (e) {
     console.error('Error reading user preferences:', e);
   }
-  return '';
+  // Default to Glycerine if no preferences are stored
+  return '100724-000000';
+};
+
+/**
+ * Get user's preferred material object from localStorage
+ * @returns Material object from user preferences or null if not set
+ */
+export const getUserMaterialObject = (): UserPreferences['material'] | null => {
+  try {
+    const stored = localStorage.getItem('user_preferences');
+    if (stored) {
+      const prefs: UserPreferences = JSON.parse(stored);
+      return prefs.material || null;
+    }
+  } catch (e) {
+    console.error('Error reading user preferences:', e);
+  }
+  return null;
 };
 
 /**
  * Get user's preferred UOM (Unit of Measure) from localStorage
  * @returns UOM (e.g., "tonne", "MT") or "tonne" as default
+ * @deprecated Always returns "MT" - dynamic UOM selection is disabled
  */
 export const getUserUom = (): string => {
-  try {
-    const stored = localStorage.getItem('user_preferences');
-    if (stored) {
-      const prefs: UserPreferences = JSON.parse(stored);
-      return prefs.uom?.uom_symbol || prefs.uom?.uom_name || 'tonne';
-    }
-  } catch (e) {
-    console.error('Error reading user preferences:', e);
-  }
-  return 'tonne';
+  return 'MT';
 };
 
 /**

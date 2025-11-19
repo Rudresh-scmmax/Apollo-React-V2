@@ -47,6 +47,7 @@ import ProcurementNews from "./ProcurementNews";
 import PriceChartWithNews from "./PriceChart";
 import VendorWiseActionPlanList from "./VendorWiseActionPlanList";
 import MaterialSelect from "../../common/MaterialSelect";
+import { getUserMaterial } from "../../utils/currencyUtils";
 
 interface TileProps {
   icon: React.ReactNode;
@@ -123,26 +124,13 @@ const DashboardPage: React.FC = () => {
   const queryClient = useQueryClient();
   const {
     getMaterials,
-    addMaterial,
     checkTiles,
     toggleTile,
     checkPDFStatus,
   } = useBusinessAPI();
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
-    getGlobalSetMaterial || { 
-      material_id: "100724-000000",
-      material_description: "Glycerine",
-      material_type_id: 1,
-      material_status: "active",
-      base_uom_id: 4,
-      user_defined_material_desc: null,
-      material_category: "Category - D",
-      cas_no: "56-81-5",
-      unspsc_code: null,
-      hsn_code: "290545"
-    }
+    getGlobalSetMaterial || null
   );
-  console.log("selectedMaterial", selectedMaterial)
   const [showAddOptions, setShowAddOptions] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -157,6 +145,20 @@ const DashboardPage: React.FC = () => {
     []
   );
 
+  // Default material (Glycerine)
+  const defaultMaterial: Material = {
+    material_id: "100724-000000",
+    material_description: "Glycerine",
+    material_type_id: 1,
+    material_status: "active",
+    base_uom_id: 4,
+    user_defined_material_desc: null,
+    material_category: "Category - D",
+    cas_no: "56-81-5",
+    unspsc_code: null,
+    hsn_code: "290545",
+  };
+
   // Fetch materials using React Query
   const { data: materials, isLoading: isLoadingMaterials } = useQuery<
     Material[]
@@ -165,6 +167,34 @@ const DashboardPage: React.FC = () => {
     queryFn: getMaterials,
   });
 
+  // Initialize material from user preferences or default to Glycerine
+  useEffect(() => {
+    if (materials && materials.length > 0) {
+      // Materials are loaded, check for preferred material
+      const preferredMaterialId = getUserMaterial(); // Gets user preferred or "100724-000000" as default
+      
+      // Try to find the preferred material in the materials list
+      const preferredMaterial = materials.find(
+        (m) => m.material_id === preferredMaterialId
+      );
+
+      // Use preferred material if found, otherwise use default (Glycerine)
+      const materialToSet = preferredMaterial || defaultMaterial;
+
+      // Only update if we don't have a material set, or if the current material doesn't match preferred
+      if (!getGlobalSetMaterial || getGlobalSetMaterial.material_id !== materialToSet.material_id) {
+        setSelectedMaterial(materialToSet);
+        dispatch(setGlobalSelectedMaterial(materialToSet));
+      } else if (getGlobalSetMaterial) {
+        // Sync local state with Redux if they're out of sync
+        setSelectedMaterial(getGlobalSetMaterial);
+      }
+    } else if (!getGlobalSetMaterial && !isLoadingMaterials) {
+      // If materials haven't loaded and no Redux material, use default
+      setSelectedMaterial(defaultMaterial);
+      dispatch(setGlobalSelectedMaterial(defaultMaterial));
+    }
+  }, [materials, getGlobalSetMaterial, dispatch, isLoadingMaterials]);
 
   // Fetch tile status using React Query
   const { data: tiles_data, isLoading: isLoadingTiles } = useQuery<Tile[]>({
@@ -194,14 +224,7 @@ const DashboardPage: React.FC = () => {
   );
 
   // Add material mutation
-  const addMaterialMutation = useMutation({
-    mutationFn: addMaterial,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["materials"] });
-      setNewMaterialName("");
-      setShowAddOptions(false);
-    },
-  });
+
 
   // Toggle tile mutation
   const toggleTileMutation = useMutation({
@@ -215,12 +238,6 @@ const DashboardPage: React.FC = () => {
 
   const handleToggleTile = (title: string, active: boolean) => {
     toggleTileMutation.mutate({ title, active });
-  };
-
-  const handleAddMaterial = () => {
-    if (newMaterialName.trim()) {
-      addMaterialMutation.mutate(newMaterialName);
-    }
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
