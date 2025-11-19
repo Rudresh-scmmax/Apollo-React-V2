@@ -53,6 +53,8 @@ import IndustryPorterAnalysis from "./tiles/IndustryPorterAnalysis/IndustryPorte
 import SeasonalityTrends from "./tiles/SeasonalityTrends/SeasonalityTrends";
 import NegotiationObjectives from "./tiles/NegotiationObjectives/NegotiationObjectives";
 import UserPreferencesPage from "./components/UserPreference";
+import REACHTracker from "./tiles/REACHTracker/REACHTracker";
+import ESGTracker from "./tiles/ESGTracker/ESGTracker";
 
 
 
@@ -118,6 +120,8 @@ const AppRoutes: React.FC = () => {
         <Route path="/seasonality-trends" element={<SeasonalityTrends />} />
         <Route path="/negotiation-objectives" element={<NegotiationObjectives />} />
         <Route path="/preferences" element={<UserPreferencesPage />} />
+        <Route path="/esg-tracker" element={<ESGTracker />} />
+        <Route path="/reach-tracker" element={<REACHTracker />} />
 
       </Route>
 

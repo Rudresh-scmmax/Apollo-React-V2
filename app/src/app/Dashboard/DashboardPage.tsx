@@ -321,6 +321,9 @@ const DashboardPage: React.FC = () => {
     },
     { icon: <FaIndustry />, title: "Industry Porter Analysis", link: "/industry-porter-analysis" },
     { icon: <FaClipboardCheck />, title: "Internal Reviews Tracker" },
+    
+    { icon: <FaClipboardCheck />, title: "ESG Tracker", link: "/esg-tracker" },
+    { icon: <FaCubes />, title: "REACH Tracker", link: "/reach-tracker" },
   ];
 
 

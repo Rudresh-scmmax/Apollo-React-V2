@@ -29,7 +29,7 @@ interface DailyUpdate {
 
 interface ProcurementPlanData {
   id: string;
-  material_code: string;
+  material_id: string;
   material_description?: string | null;
   plant_code: string;
   safety_stock?: number | null;
@@ -56,7 +56,7 @@ type ShutdownTrackingUpdateInput = {
 
 interface VendorKeyInfoUpdate {
   id?: number; // Preferred: Use ID to identify record directly
-  material_code?: string; // Required if id not provided (identifier, not updatable)
+  material_id?: string; // Required if id not provided (identifier, not updatable)
   supplier_name?: string; // Required if id not provided (identifier, not updatable)
   supplier_site?: string; // Required if id not provided (identifier, not updatable)
   capacity?: number; // Capacity (Mn Tons) - updatable (can also use capacity_mn_tons alias)

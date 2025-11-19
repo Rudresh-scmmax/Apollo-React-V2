@@ -21,7 +21,7 @@ interface NewsHighlight {
 
 interface MaterialPriceHistory {
   id: number;
-  material_code: string;
+  material_id: string;
   date: string;
   price_per_uom: string;
   currency: string;

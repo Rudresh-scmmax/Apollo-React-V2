@@ -9,7 +9,7 @@ import { useNavigate } from "react-router-dom";
 interface VendorData {
   key: number;
   id?: number; // ID from backend for easier updates
-  material_code?: string; // Material code from backend
+  material_id?: string; // Material code from backend
   supplier_name: string;
   supplier_site: string;
   capacity_mn_tons: string | number;
@@ -137,7 +137,7 @@ const VendorKeyInformation: React.FC<any> = () => {
       const formattedData = vendorInfo.map((item: any, index: number) => ({
         key: item.id || index, // Use id as key if available, fallback to index
         id: item.id, // Store ID for updates
-        material_code: item.material_code, // Store material_code
+        material_id: item.material_id, // Store material_id
         supplier_name: item.supplier_name,
         supplier_site: item.supplier_site,
         capacity_mn_tons: item.capacity ?? "",
@@ -159,8 +159,8 @@ const VendorKeyInformation: React.FC<any> = () => {
         // Preferred: Use ID to identify record directly
         updateData.id = updatedRecord.id;
       } else {
-        // Fallback: Use identifiers (material_code, supplier_name, supplier_site)
-        updateData.material_code = updatedRecord.material_code || selectedMaterial?.material_id;
+        // Fallback: Use identifiers (material_id, supplier_name, supplier_site)
+        updateData.material_id = updatedRecord.material_id || selectedMaterial?.material_id;
         updateData.supplier_name = updatedRecord.supplier_name;
         updateData.supplier_site = updatedRecord.supplier_site;
       }
@@ -197,7 +197,7 @@ const VendorKeyInformation: React.FC<any> = () => {
             ? {
                 ...item,
                 id: updatedData.id || item.id,
-                material_code: updatedData.material_code || item.material_code,
+                material_id: updatedData.material_id || item.material_id,
                 capacity_mn_tons: updatedData.capacity ?? "",
                 capacity_expansion_plans: updatedData.capacity_expansion_plans ?? "",
                 fta_benefit: updatedData.fta_benefit ?? "",

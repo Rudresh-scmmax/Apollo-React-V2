@@ -187,6 +187,9 @@ interface BusinessContextType {
   }) => Promise<any>;
   getCurrencyMaster: () => Promise<{currency_id?: number, currency_code: string, currency_name: string}[]>;
   getUomMaster: () => Promise<{uom_id: number, uom_name: string, uom_symbol: string}[]>;
+  getREACHTracker: (materialCode: string) => Promise<any>;
+  updateESGTracker: (id: number, data: any) => Promise<any>;
+  getESGTracker: (materialCode: string) => Promise<any>;
 };
 
 
@@ -1408,6 +1411,68 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
+  const getESGTracker = async (materialCode: string): Promise<any> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("material_id", materialCode);
+
+    return fetchWrapper(
+      `${businessApiUrl}/esg-tracker?${queryParams.toString()}`,
+      {
+        method: "GET",
+      }
+    );
+  };
+
+  const getREACHTracker = async (materialCode: string): Promise<any> => {
+    const queryParams = new URLSearchParams();
+    queryParams.append("material_id", materialCode);
+
+    return fetchWrapper(
+      `${businessApiUrl}/reach-tracker?${queryParams.toString()}`,
+      {
+        method: "GET",
+      }
+    );
+  };
+
+  const updateESGTracker = async (id: number, data: any): Promise<any> => {
+    return fetchWrapper(
+      `${businessApiUrl}/esg-tracker/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+  };
+
+  const updateREACHTracker = async (id: number, data: any): Promise<any> => {
+    return fetchWrapper(
+      `${businessApiUrl}/reach-tracker/${id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }
+    );
+  };
+
+  const uploadREACHDocument = async (
+    id: number,
+    file: File,
+    documentType: 'cover_letter' | 'eu_sds'
+  ): Promise<any> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("document_type", documentType);
+
+    return fetchWrapper(
+      `${businessApiUrl}/reach-tracker/${id}/upload-document`,
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
+  };
+
 
   const contextValue = {
     uploadPDF,
@@ -1496,6 +1561,11 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     updateUserPreferences,
     getCurrencyMaster,
     getUomMaster,
+    getESGTracker,
+    getREACHTracker,
+    updateESGTracker,
+    updateREACHTracker,
+    uploadREACHDocument
   };
 
   return (
