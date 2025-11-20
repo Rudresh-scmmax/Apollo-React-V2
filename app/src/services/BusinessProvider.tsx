@@ -20,6 +20,7 @@ export type MaterialUomInfo = {
   uom_id: number;
   uom_name: string;
   uom_symbol: string | null;
+  measurement_type?: string | null;
   is_preferred: boolean;
 };
 
@@ -38,6 +39,7 @@ export type MaterialWithUom = {
   uom_id?: number;
   uom_name?: string | null;
   uom_symbol?: string | null;
+  measurement_type?: string | null;
   is_preferred?: boolean;
 };
 
@@ -211,7 +213,7 @@ interface BusinessContextType {
     uom_id?: number | null;
   }) => Promise<any>;
   getCurrencyMaster: () => Promise<{currency_id?: number, currency_code: string, currency_name: string}[]>;
-  getUomMaster: () => Promise<{uom_id: number, uom_name: string, uom_symbol: string | null}[]>;
+  getUomMaster: (measurement_type?: string | null) => Promise<{uom_id: number, uom_name: string, uom_symbol: string | null, measurement_type?: string | null, uom_system?: string | null}[]>;
   updateMaterialFields: (
     material_id: string,
     payload: {
@@ -1220,8 +1222,13 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const getUomMaster = async (): Promise<{uom_id: number, uom_name: string, uom_symbol: string | null}[]> => {
-    return fetchWrapper(`${businessApiUrl}/uom-master`, {
+  const getUomMaster = async (measurement_type?: string | null): Promise<{uom_id: number, uom_name: string, uom_symbol: string | null, measurement_type?: string | null, uom_system?: string | null}[]> => {
+    const queryParams = new URLSearchParams();
+    if (measurement_type) {
+      queryParams.append("measurement_type", measurement_type);
+    }
+    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
+    return fetchWrapper(`${businessApiUrl}/uom-master${queryString}`, {
       method: "GET",
     });
   };

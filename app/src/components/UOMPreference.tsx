@@ -16,6 +16,7 @@ interface UOMPreferenceData {
   base_uom_id: number;
   uom_display: string;
   is_preferred: boolean;
+  measurement_type: string | null;
 }
 
 type EditableCellProps = React.HTMLAttributes<HTMLElement> & {
@@ -89,10 +90,29 @@ const UOMPreferencesPage: React.FC = () => {
     queryFn: getMaterialsWithUom,
   });
 
-  const { data: uomMaster, isLoading: isUomLoading } = useQuery({
-    queryKey: ['uomMaster'],
-    queryFn: getUomMaster,
+  // Get measurement type of currently editing material
+  const editingMeasurementType = React.useMemo(() => {
+    if (!editingKey || !materialsWithUom) return null;
+    const material = materialsWithUom.find((m) => m.material_id === editingKey);
+    return material?.measurement_type || material?.uom?.measurement_type || null;
+  }, [editingKey, materialsWithUom]);
+
+  // Fetch all UOMs for lookup (when not editing)
+  const { data: allUomMaster } = useQuery({
+    queryKey: ['uomMaster', null],
+    queryFn: () => getUomMaster(null),
+    enabled: !editingKey, // Only fetch all when not editing
   });
+
+  // Fetch UOMs filtered by measurement type when editing
+  const { data: filteredUomMaster, isLoading: isUomLoading } = useQuery({
+    queryKey: ['uomMaster', editingMeasurementType],
+    queryFn: () => getUomMaster(editingMeasurementType),
+    enabled: !!editingKey && !!editingMeasurementType, // Only fetch when editing
+  });
+
+  // Use filtered UOMs when editing, otherwise use all UOMs
+  const uomMaster = editingKey ? filteredUomMaster : allUomMaster;
 
   const updateMaterialMutation = useMutation({
     mutationFn: ({
@@ -118,15 +138,16 @@ const UOMPreferencesPage: React.FC = () => {
     },
   });
 
+  // Use all UOMs for lookup (not filtered) to ensure we can resolve any UOM ID
   const uomLookup = React.useMemo(() => {
     const map = new Map<number, { uom_name: string; uom_symbol: string | null }>();
-    if (uomMaster) {
-      uomMaster.forEach((uom) => {
+    if (allUomMaster) {
+      allUomMaster.forEach((uom) => {
         map.set(uom.uom_id, uom);
       });
     }
     return map;
-  }, [uomMaster]);
+  }, [allUomMaster]);
 
   // Transform materials data for table
   const tableData: UOMPreferenceData[] = React.useMemo(() => {
@@ -162,6 +183,7 @@ const UOMPreferencesPage: React.FC = () => {
         base_uom_id: material.base_uom_id,
         uom_display: uomDisplay,
         is_preferred: material.uom?.is_preferred || material.is_preferred || false,
+        measurement_type: material.measurement_type || material.uom?.measurement_type || null,
       };
     });
   }, [materialsWithUom, uomLookup]);
