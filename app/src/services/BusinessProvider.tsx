@@ -16,6 +16,31 @@ export type Material = {
   hsn_code: string | null;
 };
 
+export type MaterialUomInfo = {
+  uom_id: number;
+  uom_name: string;
+  uom_symbol: string | null;
+  is_preferred: boolean;
+};
+
+export type MaterialWithUom = {
+  material_id: string;
+  material_description: string;
+  material_type_id: number;
+  material_status: string;
+  base_uom_id: number;
+  user_defined_material_desc: string | null;
+  material_category: string | null;
+  cas_no: string | null;
+  unspsc_code: string | null;
+  hsn_code: string | null;
+  uom?: MaterialUomInfo;
+  uom_id?: number;
+  uom_name?: string | null;
+  uom_symbol?: string | null;
+  is_preferred?: boolean;
+};
+
 export type Tile = {
   name: string;
   active: boolean;
@@ -26,6 +51,7 @@ interface BusinessContextType {
   checkPDFStatus: (id: string) => Promise<any>;
   getTakeaways: (selectedMaterial?: string) => Promise<any[]>;
   getMaterials: () => Promise<Material[]>;
+  getMaterialsWithUom: () => Promise<MaterialWithUom[]>;
   getDailyUpdate: (material_id: string, region:string) => Promise<any>;
   checkTiles: () => Promise<Tile[]>;
   getMaterialPriceHistory: (
@@ -185,7 +211,20 @@ interface BusinessContextType {
     uom_id?: number | null;
   }) => Promise<any>;
   getCurrencyMaster: () => Promise<{currency_id?: number, currency_code: string, currency_name: string}[]>;
-  getUomMaster: () => Promise<{uom_id: number, uom_name: string, uom_symbol: string}[]>;
+  getUomMaster: () => Promise<{uom_id: number, uom_name: string, uom_symbol: string | null}[]>;
+  updateMaterialFields: (
+    material_id: string,
+    payload: {
+      cas_no?: string | null;
+      hsn_code?: string | null;
+      unspsc_code?: string | null;
+      base_uom_id?: number | null;
+    }
+  ) => Promise<{
+    material_id: string;
+    message: string;
+    updated_fields: Record<string, unknown>;
+  }>;
   getREACHTracker: (materialCode: string) => Promise<any>;
   updateESGTracker: (id: number, data: any) => Promise<any>;
   getESGTracker: (materialCode: string) => Promise<any>;
@@ -353,6 +392,12 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
 
   const getMaterials = async (): Promise<Material[]> => {
     return fetchWrapper(`${businessApiUrl}/get-materials`, {
+      method: "GET",
+    });
+  };
+
+  const getMaterialsWithUom = async (): Promise<MaterialWithUom[]> => {
+    return fetchWrapper(`${businessApiUrl}/materials-with-uom`, {
       method: "GET",
     });
   };
@@ -1175,9 +1220,31 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     });
   };
 
-  const getUomMaster = async (): Promise<{uom_id: number, uom_name: string, uom_symbol: string}[]> => {
+  const getUomMaster = async (): Promise<{uom_id: number, uom_name: string, uom_symbol: string | null}[]> => {
     return fetchWrapper(`${businessApiUrl}/uom-master`, {
       method: "GET",
+    });
+  };
+
+  const updateMaterialFields = async (
+    material_id: string,
+    payload: {
+      cas_no?: string | null;
+      hsn_code?: string | null;
+      unspsc_code?: string | null;
+      base_uom_id?: number | null;
+    }
+  ): Promise<{
+    material_id: string;
+    message: string;
+    updated_fields: Record<string, unknown>;
+  }> => {
+    return fetchWrapper(`${businessApiUrl}/materials/${material_id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
   };
 
@@ -1471,6 +1538,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     checkPDFStatus,
     getTakeaways,
     getMaterials,
+    getMaterialsWithUom,
     getDailyUpdate,
     checkTiles,
     toggleTile,
@@ -1552,6 +1620,7 @@ export const BusinessProvider: React.FC<BusinessProviderProps> = ({
     updateUserPreferences,
     getCurrencyMaster,
     getUomMaster,
+    updateMaterialFields,
     getESGTracker,
     getREACHTracker,
     updateESGTracker,

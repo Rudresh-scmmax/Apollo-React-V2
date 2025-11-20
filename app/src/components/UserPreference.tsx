@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaSave, FaCheck } from 'react-icons/fa';
 import { useBusinessAPI } from '../services/BusinessProvider';
@@ -6,15 +6,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import MaterialSelect from '../common/MaterialSelect';
 import RegionSelector from '../common/RegionSelector';
 import CurrencySelect from '../common/CurrencySelect';
-import UomSelect from '../common/UomSelect';
-import { setUserPreferences, getUserPreferences as getStoredUserPreferences } from '../utils/currencyUtils';
+import { setUserPreferences } from '../utils/currencyUtils';
 import type { Material } from '../services/BusinessProvider';
 
 interface UserPreferences {
   material: string;
   region: string;
   currency: string;
-  uom: number | null;
   negotiationStyle: string;
 }
 
@@ -23,14 +21,12 @@ const DEFAULT_CURRENCY = 'USD';
 const DEFAULT_CURRENCY_ID = 3;
 const DEFAULT_REGION = 'Asia-Pacific';
 const DEFAULT_MATERIAL_ID = '100724-000000';
-const DEFAULT_UOM_ID = 4; // tonne
 
 const UserPreferencesPage: React.FC = () => {
   const {
     getUserPreferences,
     updateUserPreferences,
     getCurrencyMaster,
-    getUomMaster,
     getMaterials,
     getAllRegions,
   } = useBusinessAPI();
@@ -40,7 +36,6 @@ const UserPreferencesPage: React.FC = () => {
     material: DEFAULT_MATERIAL_ID,
     region: DEFAULT_REGION,
     currency: DEFAULT_CURRENCY,
-    uom: DEFAULT_UOM_ID,
     negotiationStyle: 'balanced',
   });
 
@@ -78,13 +73,6 @@ const UserPreferencesPage: React.FC = () => {
     queryFn: getCurrencyMaster,
   });
 
-  // Fetch UOMs from API
-  const { data: uoms, isLoading: uomsLoading } = useQuery<
-    { uom_id: number; uom_name: string; uom_symbol: string }[]
-  >({
-    queryKey: ['uomMaster'],
-    queryFn: getUomMaster,
-  });
 
   // Update preferences when API data loads
   useEffect(() => {
@@ -191,33 +179,11 @@ const UserPreferencesPage: React.FC = () => {
         setMaterialId(defaultMaterial.material_id);
         setPreferences(prev => ({
           ...prev,
-          material: defaultMaterial.material_id,
-          uom: defaultMaterial.base_uom_id || prev.uom
+          material: defaultMaterial.material_id
         }));
       }
     }
-
-    // Handle UOM preference
-    if (userPrefs.uom && uoms && uoms.length > 0) {
-      const apiUom = userPrefs.uom;
-      const matchedUom = uoms.find(u => u.uom_id === apiUom.uom_id);
-      if (matchedUom) {
-        setPreferences(prev => ({
-          ...prev,
-          uom: apiUom.uom_id
-        }));
-      }
-    } else if (uoms && uoms.length > 0 && !userPrefs.uom) {
-      // No API preference, use default
-      const defaultUom = uoms.find(u => u.uom_id === DEFAULT_UOM_ID) || uoms[0];
-      if (defaultUom) {
-        setPreferences(prev => ({
-          ...prev,
-          uom: defaultUom.uom_id
-        }));
-      }
-    }
-  }, [userPrefs, currencies, regions, materials, uoms]);
+  }, [userPrefs, currencies, regions, materials]);
 
 
   // Update preferences mutation
@@ -311,15 +277,11 @@ const UserPreferencesPage: React.FC = () => {
     // Get material_id
     const targetMaterialId = preferences.material || materialId || null;
 
-    // Get uom_id
-    const targetUomId = preferences.uom || null;
-
     // Build update payload
     const updatePayload: {
       currency_id?: number | null;
       location_id?: number | null;
       material_id?: string | null;
-      uom_id?: number | null;
     } = {};
 
     if (targetCurrencyId) {
@@ -330,9 +292,6 @@ const UserPreferencesPage: React.FC = () => {
     }
     if (targetMaterialId) {
       updatePayload.material_id = targetMaterialId;
-    }
-    if (targetUomId) {
-      updatePayload.uom_id = targetUomId;
     }
 
     updatePreferencesMutation.mutate(updatePayload);
@@ -345,13 +304,13 @@ const UserPreferencesPage: React.FC = () => {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">User Preferences</h1>
           <p className="text-gray-600">Customize your trading and negotiation settings</p>
-          {(isLoading || currenciesLoading || uomsLoading) && (
+          {(isLoading || currenciesLoading) && (
             <div className="text-sm text-blue-600 mt-2">Loading preferences...</div>
           )}
         </div>
 
-        {/* Preferences Card */}
-        <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+      {/* Preferences Card */}
+      <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="p-6 sm:p-8 space-y-8">
             {/* Material Selection */}
             <div className="space-y-3">
@@ -406,21 +365,6 @@ const UserPreferencesPage: React.FC = () => {
                   selectedCurrency={preferences.currency}
                   onChange={(value) => handleChange('currency', value)}
                   loading={currenciesLoading}
-                />
-              )}
-            </div>
-
-            {/* UOM Selection */}
-            <div className="space-y-3">
-              <label className="block text-sm font-semibold text-gray-700">Unit of Measurement (UOM)</label>
-              {uomsLoading ? (
-                <div className="text-sm text-gray-500">Loading UOMs...</div>
-              ) : (
-                <UomSelect
-                  uoms={uoms || []}
-                  selectedUom={preferences.uom}
-                  onChange={(uomId) => handleChange('uom', uomId)}
-                  loading={uomsLoading}
                 />
               )}
             </div>

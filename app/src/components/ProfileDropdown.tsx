@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import React, { useEffect } from 'react';
-import { FaUser, FaCog, FaSignOutAlt, FaCreditCard } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
+import { FaUser, FaCog, FaSignOutAlt, FaCreditCard, FaChevronDown, FaChevronRight, FaRuler } from 'react-icons/fa';
 import { useAuth } from '../auth/AuthProvider';
 import { useNavigate } from 'react-router-dom';
 
@@ -11,6 +11,7 @@ const ProfileDropdown: React.FC<{
   const { logout, getDecodedToken } = useAuth();
   const token = getDecodedToken();
   const navigate = useNavigate();
+  const [isPreferencesSubmenuOpen, setIsPreferencesSubmenuOpen] = useState(false);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -21,6 +22,7 @@ const ProfileDropdown: React.FC<{
         !target.closest('.profile-dropdown-container')
       ) {
         setIsProfileDropdownOpen(false);
+        setIsPreferencesSubmenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -29,9 +31,22 @@ const ProfileDropdown: React.FC<{
     };
   }, [isProfileDropdownOpen, setIsProfileDropdownOpen]);
 
+  // Reset submenu when main dropdown closes
+  useEffect(() => {
+    if (!isProfileDropdownOpen) {
+      setIsPreferencesSubmenuOpen(false);
+    }
+  }, [isProfileDropdownOpen]);
+
   const handleNavigation = (path: string) => {
     navigate(path);
     setIsProfileDropdownOpen(false);
+    setIsPreferencesSubmenuOpen(false);
+  };
+
+  const handlePreferencesToggle = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsPreferencesSubmenuOpen(!isPreferencesSubmenuOpen);
   };
 
   const handleLogout = () => {
@@ -77,14 +92,56 @@ const ProfileDropdown: React.FC<{
 
             {/* Menu Items */}
             <div className="py-1">
-              <button
-                onClick={() => handleNavigation('/preferences')}
-                className="w-full flex items-center px-4 py-3 text-sm text-gray-700 hover:bg-[#f5f8e8] transition-colors group"
-                role="menuitem"
-              >
-                <FaCog className="mr-3 text-gray-400 group-hover:text-[#a0bf3f] transition-colors" />
-                <span className="font-medium">Preferences</span>
-              </button>
+              {/* Preferences with Submenu */}
+              <div>
+                <button
+                  onClick={handlePreferencesToggle}
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm text-gray-700 hover:bg-[#f5f8e8] transition-colors group"
+                  role="menuitem"
+                >
+                  <div className="flex items-center">
+                    <FaCog className="mr-3 text-gray-400 group-hover:text-[#a0bf3f] transition-colors" />
+                    <span className="font-medium">Preferences</span>
+                  </div>
+                  {isPreferencesSubmenuOpen ? (
+                    <FaChevronDown className="text-xs text-gray-400" />
+                  ) : (
+                    <FaChevronRight className="text-xs text-gray-400" />
+                  )}
+                </button>
+                
+                {/* Submenu */}
+                <AnimatePresence>
+                  {isPreferencesSubmenuOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="bg-gray-50 pl-4">
+                        <button
+                          onClick={() => handleNavigation('/preferences/user')}
+                          className="w-full flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#f5f8e8] hover:text-[#a0bf3f] transition-colors group"
+                          role="menuitem"
+                        >
+                          <FaUser className="mr-3 text-gray-400 group-hover:text-[#a0bf3f] transition-colors text-xs" />
+                          <span>User Preferences</span>
+                        </button>
+                        <button
+                          onClick={() => handleNavigation('/preferences/uom')}
+                          className="w-full flex items-center px-4 py-2.5 text-sm text-gray-600 hover:bg-[#f5f8e8] hover:text-[#a0bf3f] transition-colors group"
+                          role="menuitem"
+                        >
+                          <FaRuler className="mr-3 text-gray-400 group-hover:text-[#a0bf3f] transition-colors text-xs" />
+                          <span>UOM Preferences</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               <button
                 onClick={() => handleNavigation('/account')}
