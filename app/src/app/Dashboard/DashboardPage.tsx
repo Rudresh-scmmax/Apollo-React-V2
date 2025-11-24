@@ -42,7 +42,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocalStorage } from "../../services/StorageProvider";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../../store/store";
-import { setGlobalSelectedMaterial } from "../../store/materialSlice";
+import { setGlobalSelectedMaterial, defaultMaterial } from "../../store/materialSlice";
 import ProcurementNews from "./ProcurementNews";
 import PriceChartWithNews from "./PriceChart";
 import VendorWiseActionPlanList from "./VendorWiseActionPlanList";
@@ -116,6 +116,7 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const dispatch = useDispatch();
+  const hasInitializedFromPreferences = useRef(false);
 
   const getGlobalSetMaterial = useSelector(
     (state: RootState) => state.material.globalSelectedMaterial
@@ -127,9 +128,10 @@ const DashboardPage: React.FC = () => {
     checkTiles,
     toggleTile,
     checkPDFStatus,
+    getUomMaster,
   } = useBusinessAPI();
-  const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
-    getGlobalSetMaterial || null
+  const [selectedMaterial, setSelectedMaterial] = useState<Material>(
+    getGlobalSetMaterial || defaultMaterial
   );
   const [showAddOptions, setShowAddOptions] = useState(false);
   const [newMaterialName, setNewMaterialName] = useState("");
@@ -145,20 +147,6 @@ const DashboardPage: React.FC = () => {
     []
   );
 
-  // Default material (Glycerine)
-  const defaultMaterial: Material = {
-    material_id: "100724-000000",
-    material_description: "Glycerine",
-    material_type_id: 1,
-    material_status: "active",
-    base_uom_id: 4,
-    user_defined_material_desc: null,
-    material_category: "Category - D",
-    cas_no: "56-81-5",
-    unspsc_code: null,
-    hsn_code: "290545",
-  };
-
   // Fetch materials using React Query
   const { data: materials, isLoading: isLoadingMaterials } = useQuery<
     Material[]
@@ -167,10 +155,42 @@ const DashboardPage: React.FC = () => {
     queryFn: getMaterials,
   });
 
-  // Initialize material from user preferences or default to Glycerine
+  // Fetch UOM master for symbol lookup
+  const { data: uomMaster } = useQuery({
+    queryKey: ["uomMaster", null],
+    queryFn: () => getUomMaster(null),
+  });
+
+  // Ensure default material is set in Redux on mount if not already set
   useEffect(() => {
-    if (materials && materials.length > 0) {
-      // Materials are loaded, check for preferred material
+    if (!getGlobalSetMaterial) {
+      dispatch(setGlobalSelectedMaterial(defaultMaterial));
+      setSelectedMaterial(defaultMaterial);
+    }
+  }, []); // Only run once on mount
+
+  // Initialize material from user preferences or default to Glycerine (only on first load)
+  useEffect(() => {
+    // Only initialize from preferences once, on first load
+    if (!hasInitializedFromPreferences.current && materials && materials.length > 0) {
+      hasInitializedFromPreferences.current = true;
+      
+      // If we have a material in Redux that's not the default, use it (user previously selected)
+      if (getGlobalSetMaterial && getGlobalSetMaterial.material_id !== defaultMaterial.material_id) {
+        // Ensure UOM symbol is set if not already present
+        let materialToUse = getGlobalSetMaterial;
+        if (!materialToUse.uom_symbol && uomMaster && materialToUse.base_uom_id) {
+          const uom = uomMaster.find((u) => u.uom_id === materialToUse.base_uom_id);
+          if (uom?.uom_symbol) {
+            materialToUse = { ...materialToUse, uom_symbol: uom.uom_symbol };
+            dispatch(setGlobalSelectedMaterial(materialToUse));
+          }
+        }
+        setSelectedMaterial(materialToUse);
+        return;
+      }
+      
+      // Otherwise, check for preferred material from user preferences
       const preferredMaterialId = getUserMaterial(); // Gets user preferred or "100724-000000" as default
       
       // Try to find the preferred material in the materials list
@@ -179,22 +199,40 @@ const DashboardPage: React.FC = () => {
       );
 
       // Use preferred material if found, otherwise use default (Glycerine)
-      const materialToSet = preferredMaterial || defaultMaterial;
+      let materialToSet = preferredMaterial || defaultMaterial;
+      
+      // Add UOM symbol if available
+      if (uomMaster && materialToSet.base_uom_id) {
+        const uom = uomMaster.find((u) => u.uom_id === materialToSet.base_uom_id);
+        if (uom?.uom_symbol) {
+          materialToSet = { ...materialToSet, uom_symbol: uom.uom_symbol };
+        }
+      }
 
-      // Only update if we don't have a material set, or if the current material doesn't match preferred
-      if (!getGlobalSetMaterial || getGlobalSetMaterial.material_id !== materialToSet.material_id) {
+      setSelectedMaterial(materialToSet);
+      dispatch(setGlobalSelectedMaterial(materialToSet));
+    } else if (!hasInitializedFromPreferences.current && !isLoadingMaterials) {
+      // If materials haven't loaded yet, ensure default is set
+      hasInitializedFromPreferences.current = true;
+      if (!getGlobalSetMaterial || getGlobalSetMaterial.material_id === defaultMaterial.material_id) {
+        let materialToSet = defaultMaterial;
+        
+        // Add UOM symbol if available
+        if (uomMaster && materialToSet.base_uom_id) {
+          const uom = uomMaster.find((u) => u.uom_id === materialToSet.base_uom_id);
+          if (uom?.uom_symbol) {
+            materialToSet = { ...materialToSet, uom_symbol: uom.uom_symbol };
+          }
+        }
+        
         setSelectedMaterial(materialToSet);
         dispatch(setGlobalSelectedMaterial(materialToSet));
-      } else if (getGlobalSetMaterial) {
-        // Sync local state with Redux if they're out of sync
-        setSelectedMaterial(getGlobalSetMaterial);
       }
-    } else if (!getGlobalSetMaterial && !isLoadingMaterials) {
-      // If materials haven't loaded and no Redux material, use default
-      setSelectedMaterial(defaultMaterial);
-      dispatch(setGlobalSelectedMaterial(defaultMaterial));
+    } else if (getGlobalSetMaterial && selectedMaterial.material_id !== getGlobalSetMaterial.material_id) {
+      // Sync local state with Redux if they're out of sync (user has selected a material)
+      setSelectedMaterial(getGlobalSetMaterial);
     }
-  }, [materials, getGlobalSetMaterial, dispatch, isLoadingMaterials]);
+  }, [materials, getGlobalSetMaterial, dispatch, isLoadingMaterials, selectedMaterial, uomMaster]);
 
   // Fetch tile status using React Query
   const { data: tiles_data, isLoading: isLoadingTiles } = useQuery<Tile[]>({
@@ -386,10 +424,23 @@ const DashboardPage: React.FC = () => {
             <MaterialSelect
               materials={materials || []}
               selectedMaterial={selectedMaterial}
-              onSelect={(selected) => {
-                setSelectedMaterial(selected);
+              onSelect={async (selected) => {
                 if (selected) {
-                  dispatch(setGlobalSelectedMaterial(selected));
+                  // Fetch UOM master to get the UOM symbol for the selected material
+                  try {
+                    const uomMaster = await getUomMaster(null);
+                    const uom = uomMaster?.find((u) => u.uom_id === selected.base_uom_id);
+                    const materialWithUom = {
+                      ...selected,
+                      uom_symbol: uom?.uom_symbol || null,
+                    };
+                    setSelectedMaterial(materialWithUom);
+                    dispatch(setGlobalSelectedMaterial(materialWithUom));
+                  } catch (error) {
+                    // If UOM lookup fails, still set the material without symbol
+                    setSelectedMaterial(selected);
+                    dispatch(setGlobalSelectedMaterial(selected));
+                  }
                 }
               }}
             />

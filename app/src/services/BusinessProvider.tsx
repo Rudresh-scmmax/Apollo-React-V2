@@ -14,6 +14,7 @@ export type Material = {
   cas_no: string | null;
   unspsc_code: string | null;
   hsn_code: string | null;
+  uom_symbol?: string | null;
 };
 
 export type MaterialUomInfo = {

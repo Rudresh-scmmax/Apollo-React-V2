@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Table, Form, Input, Select, Button, message } from 'antd';
+import { SearchOutlined } from '@ant-design/icons';
 import { useBusinessAPI } from '../services/BusinessProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaterialWithUom } from '../services/BusinessProvider';
@@ -83,6 +84,7 @@ const UOMPreferencesPage: React.FC = () => {
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const [editingKey, setEditingKey] = React.useState<string>('');
+  const [searchText, setSearchText] = React.useState<string>('');
 
   // Fetch materials with UOM information
   const { data: materialsWithUom, isLoading } = useQuery<MaterialWithUom[]>({
@@ -187,6 +189,23 @@ const UOMPreferencesPage: React.FC = () => {
       };
     });
   }, [materialsWithUom, uomLookup]);
+
+  // Filter table data based on search text
+  const filteredTableData = React.useMemo(() => {
+    if (!searchText.trim()) return tableData;
+    
+    const searchLower = searchText.toLowerCase().trim();
+    return tableData.filter((item) => {
+      return (
+        item.material_name?.toLowerCase().includes(searchLower) ||
+        item.material_id?.toLowerCase().includes(searchLower) ||
+        item.hsn_code?.toLowerCase().includes(searchLower) ||
+        item.cas_number?.toLowerCase().includes(searchLower) ||
+        item.unspsc_code?.toLowerCase().includes(searchLower) ||
+        item.uom_display?.toLowerCase().includes(searchLower)
+      );
+    });
+  }, [tableData, searchText]);
 
   const isEditing = (record: UOMPreferenceData) => record.key === editingKey;
 
@@ -400,6 +419,24 @@ const UOMPreferencesPage: React.FC = () => {
           )}
         </div>
 
+        {/* Search Bar */}
+        <div className="mb-6">
+          <Input
+            placeholder="Search by material name, ID, HSN code, CAS number, UNSPSC code, or UOM..."
+            prefix={<SearchOutlined className="text-gray-400" />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            allowClear
+            size="large"
+            className="max-w-md"
+          />
+          {searchText && (
+            <div className="mt-2 text-sm text-gray-600">
+              Showing {filteredTableData.length} of {tableData.length} materials
+            </div>
+          )}
+        </div>
+
         {/* Table Card */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div className="p-6 sm:p-8">
@@ -413,12 +450,12 @@ const UOMPreferencesPage: React.FC = () => {
                   },
                 }}
                 columns={mergedColumns as ColumnsType<UOMPreferenceData>}
-                dataSource={tableData}
+                dataSource={filteredTableData}
                 loading={isLoading || updateMaterialMutation.isPending}
                 pagination={{
                   pageSize: 20,
                   showSizeChanger: true,
-                  showTotal: (total) => `Total ${total} materials`,
+                  showTotal: (total) => `Total ${total} materials${searchText ? ` (filtered)` : ''}`,
                   onChange: cancel,
                 }}
                 scroll={{ x: 1100 }}

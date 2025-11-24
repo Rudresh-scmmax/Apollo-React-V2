@@ -13,14 +13,15 @@ interface Material {
   cas_no: string | null;
   unspsc_code: string | null;
   hsn_code: string | null;
+  uom_symbol?: string | null;
 }
 
 interface MaterialState {
-  globalSelectedMaterial: Material | null;
+  globalSelectedMaterial: Material;
 }
 
 // Default material to set on first load when nothing is in persisted state
-const defaultMaterial: Material = {
+export const defaultMaterial: Material = {
   material_id: "100724-000000",
   material_description: "Glycerine",
   material_type_id: 1,

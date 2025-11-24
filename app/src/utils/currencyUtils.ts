@@ -23,6 +23,7 @@ interface UserPreferences {
     cas_no?: string | null;
     unspsc_code?: string | null;
     hsn_code?: string | null;
+    uom_symbol?: string | null;
   } | null;
   uom?: {
     uom_id: number;
@@ -164,13 +165,41 @@ export const getUserMaterialObject = (): UserPreferences['material'] | null => {
 };
 
 /**
- * Get user's preferred UOM (Unit of Measure) from localStorage
- * @returns UOM (e.g., "tonne", "MT") or "tonne" as default
- * @deprecated Always returns "MT" - dynamic UOM selection is disabled
+ * Get UOM symbol from localStorage
+ * Checks appState.material.globalSelectedMaterial.uom_symbol first,
+ * then falls back to user_preferences.material.uom_symbol
+ * @returns UOM symbol (e.g., "kg", "MT") or null if not found
  */
-export const getUserUom = (): string => {
-  return 'MT';
+export const getUserUom = (): string | null => {
+  try {
+    // First check appState (global selected material)
+    const appState = localStorage.getItem('appState');
+    if (appState) {
+      const state = JSON.parse(appState);
+      if (state?.material?.globalSelectedMaterial?.uom_symbol) {
+        return state.material.globalSelectedMaterial.uom_symbol;
+      }
+    }
+
+    // Fall back to user preferences
+    const stored = localStorage.getItem('user_preferences');
+    if (stored) {
+      const prefs: UserPreferences = JSON.parse(stored);
+      if (prefs.material?.uom_symbol) {
+        return prefs.material.uom_symbol;
+      }
+      // Also check uom object in preferences
+      if (prefs.uom?.uom_symbol) {
+        return prefs.uom.uom_symbol;
+      }
+    }
+  } catch (e) {
+    console.error('Error reading UOM symbol from localStorage:', e);
+  }
+  return null;
 };
+
+
 
 /**
  * Store user preferences in localStorage
