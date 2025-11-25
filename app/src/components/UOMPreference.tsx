@@ -6,6 +6,9 @@ import { useBusinessAPI } from '../services/BusinessProvider';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { MaterialWithUom } from '../services/BusinessProvider';
 import type { ColumnsType, ColumnType } from 'antd/es/table';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../store/store';
+import { setGlobalSelectedMaterial } from '../store/materialSlice';
 
 interface UOMPreferenceData {
   key: string;
@@ -85,6 +88,10 @@ const UOMPreferencesPage: React.FC = () => {
   const [form] = Form.useForm();
   const [editingKey, setEditingKey] = React.useState<string>('');
   const [searchText, setSearchText] = React.useState<string>('');
+  const dispatch = useDispatch();
+  const globalSelectedMaterial = useSelector(
+    (state: RootState) => state.material.globalSelectedMaterial
+  );
 
   // Fetch materials with UOM information
   const { data: materialsWithUom, isLoading } = useQuery<MaterialWithUom[]>({
@@ -129,11 +136,14 @@ const UOMPreferencesPage: React.FC = () => {
         base_uom_id?: number | null;
       };
     }) => updateMaterialFields(materialId, payload),
-    onSuccess: () => {
+    onSuccess: (_, { materialId, payload }) => {
       message.success('Material updated successfully');
       setEditingKey('');
       form.resetFields();
       queryClient.invalidateQueries({ queryKey: ['materialsWithUom'] });
+      if (payload.base_uom_id !== undefined && payload.base_uom_id !== null) {
+        syncMaterialUomChange(materialId, payload.base_uom_id);
+      }
     },
     onError: (error: Error) => {
       message.error(error.message || 'Failed to update material');
@@ -142,7 +152,16 @@ const UOMPreferencesPage: React.FC = () => {
 
   // Use all UOMs for lookup (not filtered) to ensure we can resolve any UOM ID
   const uomLookup = React.useMemo(() => {
-    const map = new Map<number, { uom_name: string; uom_symbol: string | null }>();
+    const map = new Map<
+      number,
+      {
+        uom_id: number;
+        uom_name: string;
+        uom_symbol: string | null;
+        measurement_type?: string | null;
+        uom_system?: string | null;
+      }
+    >();
     if (allUomMaster) {
       allUomMaster.forEach((uom) => {
         map.set(uom.uom_id, uom);
@@ -150,6 +169,64 @@ const UOMPreferencesPage: React.FC = () => {
     }
     return map;
   }, [allUomMaster]);
+
+  const getUomDetails = React.useCallback(
+    (uomId?: number | null) => {
+      if (uomId === undefined || uomId === null) return null;
+      return (
+        uomLookup.get(uomId) ||
+        filteredUomMaster?.find((uom) => uom.uom_id === uomId) ||
+        null
+      );
+    },
+    [uomLookup, filteredUomMaster]
+  );
+
+  const updateUserPreferenceMaterialUom = React.useCallback(
+    (materialId: string, baseUomId?: number | null, uomSymbol?: string | null) => {
+      try {
+        const stored = localStorage.getItem('user_preferences');
+        if (!stored) return;
+        const prefs = JSON.parse(stored);
+        let shouldPersist = false;
+
+        if (prefs.material?.material_id === materialId) {
+          if (baseUomId !== undefined && baseUomId !== null) {
+            prefs.material.base_uom_id = baseUomId;
+          }
+          prefs.material.uom_symbol = uomSymbol ?? prefs.material.uom_symbol ?? null;
+          shouldPersist = true;
+        }
+
+        if (shouldPersist) {
+          localStorage.setItem('user_preferences', JSON.stringify(prefs));
+        }
+      } catch (error) {
+        console.error('Failed to update user preferences UOM:', error);
+      }
+    },
+    []
+  );
+
+  const syncMaterialUomChange = React.useCallback(
+    (materialId: string, baseUomId?: number | null) => {
+      if (baseUomId === undefined || baseUomId === null) return;
+      const uomInfo = getUomDetails(baseUomId);
+      const uomSymbol = uomInfo?.uom_symbol ?? null;
+
+      if (globalSelectedMaterial?.material_id === materialId) {
+        const updatedMaterial = {
+          ...globalSelectedMaterial,
+          base_uom_id: baseUomId,
+          uom_symbol: uomSymbol,
+        };
+        dispatch(setGlobalSelectedMaterial(updatedMaterial));
+      }
+
+      updateUserPreferenceMaterialUom(materialId, baseUomId, uomSymbol);
+    },
+    [dispatch, getUomDetails, globalSelectedMaterial, updateUserPreferenceMaterialUom]
+  );
 
   // Transform materials data for table
   const tableData: UOMPreferenceData[] = React.useMemo(() => {
