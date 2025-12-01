@@ -31,7 +31,6 @@ const MarketResearchReport: React.FC = () => {
   const { getTakeaways,  uploadPDF, checkPDFStatus, getMaterials, deleteTakeaway } =
     useBusinessAPI();
   const [showAddOptions, setShowAddOptions] = useState(false);
-  const [newmaterialId, setNewmaterialId] = useState<string>("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [selectedMaterial, setSelectedMaterial] = useState<Material | null>(
     getGlobalSetMaterial
@@ -55,7 +54,6 @@ const MarketResearchReport: React.FC = () => {
       uploadPDF(params.file, params.material_id),
     onSuccess: (response) => {
       setSelectedFile(null);
-      setNewmaterialId("");
       // Clear the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -113,13 +111,13 @@ const MarketResearchReport: React.FC = () => {
   };
 
   const handleUploadPDF = () => {
-    if (selectedFile && newmaterialId) {
+    if (selectedFile && selectedMaterial?.material_id) {
       uploadPDFMutation.mutate({
         file: selectedFile,
-        material_id: newmaterialId,
+        material_id: selectedMaterial.material_id,
       });
     } else {
-      message.error("material or file should not be empty");
+      message.error("Please select a material and file to upload");
     }
   };
 
@@ -193,10 +191,10 @@ const MarketResearchReport: React.FC = () => {
               {showAddOptions && (
                 <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
                   <div className="p-4 space-y-4">
-                    {/* Add Material */}
+                    {/* Select Material */}
                     <div>
                       <h3 className="text-sm font-medium text-gray-700 mb-2">
-                        Add New Material
+                        Select Material
                       </h3>
                       <div className="flex gap-2">
                         <MaterialSelect
@@ -204,9 +202,6 @@ const MarketResearchReport: React.FC = () => {
                           selectedMaterial={selectedMaterial}
                           onSelect={(selected) => {
                             setSelectedMaterial(selected);
-                            if (selected) {
-                              setNewmaterialId(selected.material_id);
-                            }
                           }}
                         />
                       </div>
@@ -230,17 +225,17 @@ const MarketResearchReport: React.FC = () => {
                           className="text-white px-3 py-1 rounded transition-colors flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                           style={{ backgroundColor: "#a0bf3f" }}
                           onMouseEnter={(e) => {
-                            if (!uploadPDFMutation.isPending && selectedFile && newmaterialId) {
+                            if (!uploadPDFMutation.isPending && selectedFile && selectedMaterial?.material_id) {
                               e.currentTarget.style.backgroundColor = "#8bad34";
                             }
                           }}
                           onMouseLeave={(e) => {
-                            if (!uploadPDFMutation.isPending && selectedFile && newmaterialId) {
+                            if (!uploadPDFMutation.isPending && selectedFile && selectedMaterial?.material_id) {
                               e.currentTarget.style.backgroundColor = "#a0bf3f";
                             }
                           }}
                           disabled={
-                            !selectedFile || !newmaterialId || uploadPDFMutation.isPending
+                            !selectedFile || !selectedMaterial?.material_id || uploadPDFMutation.isPending
                           }
                         >
                           {uploadPDFMutation.isPending ? (
